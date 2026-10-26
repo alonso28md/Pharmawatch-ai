@@ -1,0 +1,141 @@
+FUENTE: Agencia Española de Medicamentos y Productos Sanitarios (AEMPS)
+Páginas oficiales: "Vigilancia de productos sanitarios" y "Información sobre el
+sistema de vigilancia de productos sanitarios y sobre las funciones del
+responsable de vigilancia de los centros sanitarios"
+URLs: https://www.aemps.gob.es/productos-sanitarios/vigilancia_productossanitarios/
+      https://www.aemps.gob.es/productos-sanitarios/vigilancia_productossanitarios/informacion-sobre-el-sistema-de-vigilancia-de-productos-sanitarios-y-sobre-las-funciones-del-responsable-de-vigilancia-de-los-centros-sanitarios/
+Última actualización citada por la AEMPS: 04 de mayo de 2026
+Marco normativo de referencia: Reglamento (UE) 2017/745 (MDR), Reglamento (UE)
+2017/746 (IVDR), Real Decreto 192/2023 (productos sanitarios), Real Decreto
+942/2025 (productos sanitarios para diagnóstico in vitro)
+
+================================================================================
+SECCIÓN 1 — Qué es el Sistema Español de Vigilancia de Productos Sanitarios
+================================================================================
+
+"El Sistema Español de Vigilancia de productos sanitarios comprende la
+notificación de los incidentes graves y acciones correctivas de seguridad
+relacionadas con productos sanitarios, su registro y evaluación, la adopción de
+las medidas oportunas en orden a la protección de la salud y la transmisión de
+estas medidas a los agentes interesados."
+
+El ámbito del Sistema de Vigilancia de Productos Sanitarios comprende a los
+productos que se incluyen en las definiciones de "producto sanitario", "producto
+sanitario para diagnóstico in vitro" y "accesorio" que se especifican en los
+reglamentos (MDR y IVDR). También se incluirán los "productos sin finalidad
+médica prevista" enumerados en el Anexo XVI del Reglamento 2017/745 cuando se
+cumplan los periodos transitorios a los que están sujetos.
+
+"El sistema de vigilancia de productos sanitarios engloba la notificación de
+incidentes graves ocurridos con productos sanitarios, su registro y evaluación,
+la adopción de medidas oportunas para la protección de la salud y la
+transmisión de estas medidas a los agentes interesados."
+
+Su objetivo es mejorar la protección de la salud y la seguridad evitando la
+repetición de incidentes graves, mediante la recogida, evaluación y difusión de
+la información sobre los citados incidentes y la adopción de las medidas
+correctivas apropiadas.
+
+================================================================================
+SECCIÓN 2 — Canal de notificación: NotificaPS
+================================================================================
+
+La vía de notificación oficial de la AEMPS para incidentes con productos
+sanitarios es el Portal NotificaPS.
+
+Flujo de tramitación de una notificación:
+1. El notificador (profesional sanitario, paciente, familiar o cuidador) envía
+   el informe a través del Portal NotificaPS en la web de la AEMPS.
+2. El reporte se dirige al punto de contacto de vigilancia de la comunidad
+   autónoma correspondiente.
+3. Si lo envía un paciente, recibe un acuse de recibo por correo electrónico con
+   un código de localización ("localizador") para seguimiento.
+4. Las comunidades autónomas validan las notificaciones de incidentes recibidas
+   a través del Portal NotificaPS antes de su remisión al Área de Vigilancia de
+   Productos Sanitarios de la AEMPS.
+5. Tras la revisión preliminar, la AEMPS registra la notificación en su base de
+   datos y, si procede, envía un número de referencia.
+6. Las consultas adicionales se dirigen a psvigilancia@aemps.es, indicando la
+   referencia y copiando al punto de contacto autonómico correspondiente
+   (directorio recogido en el Anexo V de la guía de vigilancia).
+
+Qué se debe notificar: fallos o deterioros de un producto sanitario que hayan
+causado o podido causar la muerte, un deterioro grave del estado de salud o una
+amenaza para la salud pública, así como los incidentes potenciales que hayan
+sido evitados por la intervención del personal sanitario o por circunstancias
+afortunadas. Ejemplos citados por la AEMPS: fallo en los frenos de una silla de
+ruedas; una bomba de infusión que administra una dosis incorrecta o no alarma
+correctamente; partículas extrañas en el envase de una lentilla de contacto.
+
+Quién puede notificar: cualquier persona puede notificar. Los pacientes,
+familiares y cuidadores pueden notificar incidentes que les afecten a ellos o a
+una persona a su cuidado. Los profesionales sanitarios están obligados a
+notificar los incidentes graves de los que tengan conocimiento en el ejercicio
+de su actividad. Los fabricantes deben investigar todos los incidentes
+relacionados con sus productos y notificar a la AEMPS los que hayan causado o
+puedan causar la muerte o un deterioro grave de la salud.
+
+Protección de datos: el tratamiento de los datos se realiza conforme al
+Reglamento General de Protección de Datos (RGPD, Reglamento (UE) 2016/679) y a
+la Ley Orgánica 3/2018 (LOPDGDD). Los interesados pueden ejercer sus derechos de
+acceso, rectificación, supresión, portabilidad, limitación y oposición
+dirigiéndose a la AEMPS o al correo edossier@aemps.es.
+
+================================================================================
+SECCIÓN 3 — El responsable de vigilancia de productos sanitarios en los centros
+sanitarios
+================================================================================
+
+Los centros con internamiento y cirugía mayor ambulatoria deben designar
+formalmente una persona responsable de vigilancia de productos sanitarios. En el
+resto de centros, esta responsabilidad recae en el director médico o
+responsable sanitario inscrito en el registro autonómico correspondiente.
+
+Funciones y responsabilidades del responsable de vigilancia (según la guía
+AEMPS, elaborada conjuntamente con las comunidades autónomas en el seno del
+Comité Técnico de Inspección):
+
+- Supervisar, en su centro, el cumplimiento de las obligaciones establecidas en
+  el artículo 35 del Real Decreto 192/2023, de 21 de marzo, por el que se
+  regulan los productos sanitarios, y del artículo 30 del Real Decreto 942/2025,
+  de 21 de octubre, por el que se regulan los productos sanitarios para
+  diagnóstico in vitro, relacionadas con el sistema de vigilancia.
+- Supervisar y coordinar el cumplimiento, por parte de los profesionales
+  sanitarios del centro, del procedimiento establecido de notificación a las
+  autoridades sanitarias de incidentes graves o potencialmente graves asociados
+  con la utilización de productos sanitarios, de los que tenga conocimiento en
+  el ejercicio de su actividad sanitaria.
+- Actuar como interlocutor del centro con las autoridades sanitarias en materia
+  de vigilancia de productos sanitarios.
+- Facilitar a las autoridades sanitarias la documentación que le sea requerida
+  para la investigación de los incidentes graves notificados.
+- Garantizar la difusión, a los profesionales sanitarios implicados de su
+  centro, de las notas informativas y alertas de productos sanitarios emitidas
+  por la AEMPS y transmitidas por las autoridades sanitarias autonómicas
+  competentes, y supervisar la aplicación de las medidas establecidas en ellas.
+- Velar por el cumplimiento de las obligaciones establecidas en el artículo 36
+  del Real Decreto 192/2023 en relación con las tarjetas de implante.
+
+================================================================================
+SECCIÓN 4 — Coordinación europea: relación con el sistema MDR y EUDAMED
+================================================================================
+
+El sistema español de vigilancia (NotificaPS, AEMPS, puntos de contacto
+autonómicos) es la vía nacional de recepción de notificaciones de incidentes en
+España, pero se integra en el marco europeo de vigilancia definido por el MDR
+(Reglamento (UE) 2017/745), que exige a los fabricantes notificar los incidentes
+graves y acciones correctivas de seguridad a través del sistema electrónico
+EUDAMED (Artículo 92 del MDR), con transmisión automática a la autoridad
+competente del Estado miembro en el que haya ocurrido el incidente. La AEMPS
+actúa como autoridad competente española dentro de ese sistema europeo
+coordinado: evalúa centralmente a nivel nacional la información recibida sobre
+incidentes graves ocurridos en España, coopera con el fabricante y, en su caso,
+con el organismo notificado, y puede intervenir en la investigación o iniciar
+una investigación independiente cuando sea necesario (criterios equivalentes a
+los del Artículo 89 del MDR).
+
+Nota: la revisión de mayo de 2026 de la guía de vigilancia de la AEMPS alinea
+expresamente el sistema español con el marco MDR/IVDR vigente, sustituyendo las
+referencias a la normativa anterior (Real Decreto 1591/2009 de productos
+sanitarios, Real Decreto 1662/2000 de diagnóstico in vitro, y Real Decreto
+1616/2009 de implantables activos) por el régimen armonizado europeo.

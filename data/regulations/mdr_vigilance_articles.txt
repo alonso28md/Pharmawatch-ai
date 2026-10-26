@@ -1,0 +1,250 @@
+SOURCE: Regulation (EU) 2017/745 of the European Parliament and of the Council of 5 April 2017
+on medical devices (Medical Device Regulation, "MDR")
+Official Journal of the European Union, L 117/1, 5.5.2017
+Consolidated text retrieved from EUR-Lex (CELEX:32017R0745)
+Chapter/Articles reproduced: Article 2 (definitions, points 64-69), Chapter VII Section 2
+"Vigilance" (Articles 87, 88, 89), Article 92 (Eudamed electronic system on vigilance)
+
+NOTE ON SOURCING: this file reproduces the legally binding Regulation text itself
+(Articles 87-89 and 92, plus the Article 2 definitions they depend on), rather than
+the MDCG 2020-7 guidance document. MDCG 2020-7 is in fact the "Guidance on the Post-
+Market Clinical Follow-up (PMCF) Plan Template" (April 2020) and does not cover
+vigilance reporting deadlines; the serious-incident reporting deadlines, trend
+reporting and FSCA obligations are defined directly in the Regulation articles below.
+The current MDCG vigilance guidance documents are MDCG 2025-10 ("Guidance on
+post-market surveillance of medical devices and in vitro diagnostic medical devices")
+and MDCG 2023-3 rev.2 ("Questions and Answers on vigilance terms and concepts").
+
+================================================================================
+Article 2 — Definitions (point 64-69)
+================================================================================
+
+(64) 'incident' means any malfunction or deterioration in the characteristics or
+performance of a device made available on the market, including use-error due to
+ergonomic features, as well as any inadequacy in the information supplied by the
+manufacturer and any undesirable side-effect;
+
+(65) 'serious incident' means any incident that directly or indirectly led, might
+have led or might lead to any of the following:
+(a) the death of a patient, user or other person,
+(b) the temporary or permanent serious deterioration of a patient's, user's or
+other person's state of health,
+(c) a serious public health threat;
+
+(66) 'serious public health threat' means an event which could result in imminent
+risk of death, serious deterioration in a person's state of health, or serious
+illness, that may require prompt remedial action, and that may cause significant
+morbidity or mortality in humans, or that is unusual or unexpected for the given
+place and time;
+
+(67) 'corrective action' means action taken to eliminate the cause of a potential
+or actual non-conformity or other undesirable situation;
+
+(68) 'field safety corrective action' (FSCA) means corrective action taken by a
+manufacturer for technical or medical reasons to prevent or reduce the risk of a
+serious incident in relation to a device made available on the market;
+
+(69) 'field safety notice' means a communication sent by a manufacturer to users
+or customers in relation to a field safety corrective action.
+
+================================================================================
+Article 87 — Reporting of serious incidents and field safety corrective actions
+================================================================================
+
+1. Manufacturers of devices made available on the Union market, other than
+investigational devices, shall report, to the relevant competent authorities, in
+accordance with Articles 92(5) and (7), the following:
+(a) any serious incident involving devices made available on the Union market,
+except expected side-effects which are clearly documented in the product
+information and quantified in the technical documentation and are subject to
+trend reporting pursuant to Article 88;
+(b) any field safety corrective action in respect of devices made available on
+the Union market, including any field safety corrective action undertaken in a
+third country in relation to a device which is also legally made available on
+the Union market, if the reason for the field safety corrective action is not
+limited to the device made available in the third country.
+
+The reports referred to in the first subparagraph shall be submitted through the
+electronic system referred to in Article 92.
+
+2. As a general rule, the period for the reporting referred to in paragraph 1
+shall take account of the severity of the serious incident.
+
+3. Manufacturers shall report any serious incident as referred to in point (a) of
+paragraph 1 immediately after they have established the causal relationship
+between that incident and their device or that such causal relationship is
+reasonably possible and not later than 15 days after they become aware of the
+incident.
+
+4. Notwithstanding paragraph 3, in the event of a serious public health threat
+the report referred to in paragraph 1 shall be provided immediately, and not
+later than 2 days after the manufacturer becomes aware of that threat.
+
+5. Notwithstanding paragraph 3, in the event of death or an unanticipated serious
+deterioration in a person's state of health the report shall be provided
+immediately after the manufacturer has established or as soon as it suspects a
+causal relationship between the device and the serious incident but not later
+than 10 days after the date on which the manufacturer becomes aware of the
+serious incident.
+
+6. Where necessary to ensure timely reporting, the manufacturer may submit an
+initial report that is incomplete followed up by a complete report.
+
+7. If, after becoming aware of a potentially reportable incident, the
+manufacturer is uncertain about whether the incident is reportable, it shall
+nevertheless submit a report within the timeframe required in accordance with
+paragraphs 2 to 5.
+
+8. Except in cases of urgency in which the manufacturer needs to undertake field
+safety corrective action immediately, the manufacturer shall, without undue
+delay, report the field safety corrective action referred to in point (b) of
+paragraph 1 in advance of the field safety corrective action being undertaken.
+
+9. For similar serious incidents that occur with the same device or device type
+and for which the root cause has been identified or a field safety corrective
+action implemented or where the incidents are common and well documented, the
+manufacturer may provide periodic summary reports instead of individual serious
+incident reports, on condition that the coordinating competent authority
+referred to in Article 89(9), in consultation with the competent authorities
+referred to in point (a) of Article 92(8), has agreed with the manufacturer on
+the format, content and frequency of the periodic summary reporting.
+
+10. The Member States shall take appropriate measures, such as organising
+targeted information campaigns, to encourage and enable healthcare
+professionals, users and patients to report to the competent authorities
+suspected serious incidents referred to in point (a) of paragraph 1. The
+competent authorities shall record centrally at national level reports they
+receive from healthcare professionals, users and patients.
+
+11. Where a competent authority of a Member State obtains such reports on
+suspected serious incidents from healthcare professionals, users or patients, it
+shall take the necessary steps to ensure that the manufacturer of the device
+concerned is informed of the suspected serious incident without delay. Where the
+manufacturer considers that the incident is a serious incident, it shall provide
+a report in accordance with paragraphs 1 to 5 of this Article. Where the
+manufacturer considers that the incident is not a serious incident or is an
+expected undesirable side-effect covered by trend reporting under Article 88, it
+shall provide an explanatory statement; the competent authority may nonetheless
+require a full report.
+
+SUMMARY OF DEADLINES (Article 87):
+- Serious public health threat: immediately, no later than 2 days after awareness.
+- Death or unanticipated serious deterioration in health: immediately, no later
+  than 10 days after awareness.
+- Any other serious incident: immediately after causality is established or
+  reasonably possible, no later than 15 days after awareness.
+
+================================================================================
+Article 88 — Trend reporting
+================================================================================
+
+1. Manufacturers shall report, by means of the electronic system referred to in
+Article 92, any statistically significant increase in the frequency or severity
+of incidents that are not serious incidents or that are expected undesirable
+side-effects that could have a significant impact on the benefit-risk analysis
+referred to in Sections 1 and 5 of Annex I and which have led or may lead to
+risks to the health or safety of patients, users or other persons that are
+unacceptable when weighed against the intended benefits. The significant
+increase shall be established in comparison to the foreseeable frequency or
+severity of such incidents in respect of the device, or category or group of
+devices, in question during a specific period as specified in the technical
+documentation and product information.
+
+The manufacturer shall specify how to manage the incidents referred to in the
+first subparagraph and the methodology used for determining any statistically
+significant increase in the frequency or severity of such incidents, as well as
+the observation period, in the post-market surveillance plan referred to in
+Article 84.
+
+2. The competent authorities may conduct their own assessments on the trend
+reports referred to in paragraph 1 and require the manufacturer to adopt
+appropriate measures in accordance with this Regulation in order to ensure the
+protection of public health and patient safety. Each competent authority shall
+inform the Commission, the other competent authorities and the notified body
+that issued the certificate, of the results of such assessment and of the
+adoption of such measures.
+
+================================================================================
+Article 89 — Analysis of serious incidents and field safety corrective actions
+================================================================================
+
+1. Following the reporting of a serious incident pursuant to Article 87(1), the
+manufacturer shall, without delay, perform the necessary investigations in
+relation to the serious incident and the devices concerned. This shall include a
+risk assessment of the incident and field safety corrective action taking into
+account criteria as referred to in paragraph 3 of this Article as appropriate.
+The manufacturer shall co-operate with the competent authorities and, where
+relevant, the notified body concerned during the investigations, and shall not
+perform any investigation which involves altering the device or a sample of the
+batch concerned in a way which may affect any subsequent evaluation of the
+causes of the incident, prior to informing the competent authorities of such
+action.
+
+2. Member States shall take the necessary steps to ensure that any information
+regarding a serious incident that has occurred within their territory, or a
+field safety corrective action that has been or is to be undertaken within their
+territory, is evaluated centrally at national level by their competent
+authority, if possible together with the manufacturer, and, where relevant, the
+notified body concerned.
+
+3. In the context of the evaluation referred to in paragraph 2, the competent
+authority shall evaluate the risks arising from the reported serious incident and
+evaluate any related field safety corrective actions, taking into account the
+protection of public health and criteria such as causality, detectability and
+probability of recurrence of the problem, frequency of use of the device,
+probability of occurrence of direct or indirect harm, the severity of that harm,
+the clinical benefit of the device, intended and potential users, and population
+affected. The competent authority shall also evaluate the adequacy of the field
+safety corrective action envisaged or undertaken by the manufacturer and the
+need for, and kind of, any other corrective action, in particular taking into
+account the principle of inherent safety contained in Annex I.
+
+4. The competent authority shall monitor the manufacturer's investigation of a
+serious incident. Where necessary, a competent authority may intervene in a
+manufacturer's investigation or initiate an independent investigation.
+
+5. The manufacturer shall provide a final report to the competent authority
+setting out its findings from the investigation by means of the electronic
+system referred to in Article 92. The report shall set out conclusions and where
+relevant indicate corrective actions to be taken.
+
+================================================================================
+Article 92 — Electronic system on vigilance and on post-market surveillance
+================================================================================
+
+1. The Commission shall, in collaboration with the Member States, set up and
+manage an electronic system (EUDAMED) to collate and process the following
+information:
+(a) the reports by manufacturers on serious incidents and field safety
+corrective actions referred to in Article 87(1) and Article 89(5);
+(b) the periodic summary reports by manufacturers referred to in Article 87(9);
+(c) the reports by manufacturers on trends referred to in Article 88;
+(d) the PSURs (Periodic Safety Update Reports) referred to in Article 86;
+(e) the field safety notices by manufacturers referred to in Article 89(8);
+(f) the information to be exchanged between the competent authorities of the
+Member States and between them and the Commission in accordance with Article
+89(7) and (9).
+That electronic system shall include relevant links to the UDI database.
+
+2. The information referred to in paragraph 1 shall be made available through
+the electronic system to the competent authorities of the Member States and to
+the Commission. The notified bodies shall also have access to that information
+to the extent that it relates to devices for which they issued a certificate.
+
+3. The Commission shall ensure that healthcare professionals and the public have
+appropriate levels of access to the electronic system referred to in paragraph 1.
+
+5. The reports on serious incidents referred to in point (a) of Article 87(1)
+shall be automatically transmitted, upon receipt, via the electronic system to
+the competent authority of the Member State in which the incident occurred.
+
+6. The trend reports referred to in Article 88(1) shall be automatically
+transmitted upon receipt via the electronic system to the competent authorities
+of the Member State in which the incidents occurred.
+
+7. The reports on field safety corrective actions referred to in point (b) of
+Article 87(1) shall be automatically transmitted upon receipt via the electronic
+system to the competent authorities of the Member States in which the field
+safety corrective action is being, or is to be, undertaken and, in the case
+referred to in point (b) of Article 87(1), the Member State in which the
+manufacturer has its registered place of business.
