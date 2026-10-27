@@ -26,7 +26,11 @@ class QueryLog(Base):
     status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # "live" for real traffic; "demo" for scripts/seed_db.py rows (excluded from /metrics).
     source: Mapped[str] = mapped_column(String(8), default="live", nullable=False)
+    # The submitted text is only kept when STORE_INPUT_TEXT=true; otherwise just its
+    # length and SHA-256 (enough to spot duplicates without retaining patient narratives).
     input_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    input_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     output_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     severity: Mapped[str | None] = mapped_column(String(16), nullable=True)
     device_class: Mapped[str | None] = mapped_column(String(8), nullable=True)

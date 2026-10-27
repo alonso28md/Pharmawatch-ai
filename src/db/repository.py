@@ -19,6 +19,8 @@ _ADDED_QUERY_COLUMNS = {
     "status_code": "INTEGER",
     "source": "VARCHAR(8) NOT NULL DEFAULT 'live'",
     "escalation_level": "VARCHAR(16)",
+    "input_length": "INTEGER",
+    "input_sha256": "VARCHAR(64)",
 }
 
 
@@ -43,6 +45,18 @@ class Repository:
         with self._engine.begin() as conn:
             for name, ddl in missing.items():
                 conn.execute(text(f"ALTER TABLE queries ADD COLUMN {name} {ddl}"))
+            if "status_code" in missing:
+                # One-off, only when upgrading a pre-v2 database: before v2 a middleware bug
+                # (B-05) left latency_ms NULL for every real request, so the only /ask and
+                # /report rows carrying a latency are the synthetic rows written by
+                # scripts/seed_db.py. Mark them as demo so /metrics excludes them.
+                marked = conn.execute(
+                    text(
+                        "UPDATE queries SET source = 'demo' WHERE status_code IS NULL "
+                        "AND latency_ms IS NOT NULL AND endpoint IN ('/ask', '/report')"
+                    )
+                ).rowcount
+                logger.info("Marked %d legacy seed row(s) as source='demo'", marked)
         logger.info("Added column(s) %s to existing queries table", sorted(missing))
 
     # --- query log ------------------------------------------------------------------
@@ -63,6 +77,8 @@ class Repository:
         status_code: int | None = None,
         source: str = "live",
         escalation_level: str | None = None,
+        input_length: int | None = None,
+        input_sha256: str | None = None,
     ) -> int:
         """Insert one query log row and return its id."""
         with self._session_factory() as session:
@@ -71,7 +87,8 @@ class Repository:
                 severity=severity, device_class=device_class, reportable=reportable,
                 confidence=confidence, escalated=escalated, latency_ms=latency_ms, error=error,
                 method=method, status_code=status_code, source=source,
-                escalation_level=escalation_level,
+                escalation_level=escalation_level, input_length=input_length,
+                input_sha256=input_sha256,
             )
             session.add(record)
             session.commit()

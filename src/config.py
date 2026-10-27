@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     demo_mode: bool = Field(default=False, alias="DEMO_MODE")
     rate_limit_per_minute: int = Field(default=30, alias="RATE_LIMIT_PER_MINUTE")
     max_request_bytes: int = Field(default=64_000, alias="MAX_REQUEST_BYTES")
+    # Privacy: by default the query log keeps only the length and SHA-256 of submitted text.
+    store_input_text: bool = Field(default=False, alias="STORE_INPUT_TEXT")
 
     # Evaluation: only these named datasets (name=file under data/) may be run via the API.
     evaluation_datasets: str = Field(

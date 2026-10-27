@@ -213,12 +213,12 @@ def test_existing_database_is_migrated_additively(tmp_path):
         conn.execute(OLD_QUERIES_DDL)
         conn.execute(
             "INSERT INTO queries (timestamp, endpoint, escalated, latency_ms) "
-            "VALUES ('2026-10-27 11:50:47', '/ask', 0, 1234.5)"
+            "VALUES ('2026-10-27 11:50:47', '/ask', 0, NULL)"  # pre-v2 real traffic never had a latency (B-05)
         )
 
     repo = Repository(path)
     (old,) = repo.list_queries()
-    assert old.latency_ms == 1234.5 and old.source == "live" and old.status_code is None
+    assert old.latency_ms is None and old.source == "live" and old.status_code is None
     repo.log_query(endpoint="/ask", status_code=200, latency_ms=1.0)
     assert len(repo.list_queries()) == 2
     Repository(path)  # idempotent: a second start does not try to re-add columns
@@ -256,3 +256,54 @@ def test_default_graph_is_compiled_once(monkeypatch):
     monkeypatch.setattr(graph, "default_deps", lambda: deps_for(ScriptedLLM()))
     assert graph.get_default_graph() is graph.get_default_graph()
     graph.reset_default_graph()
+
+
+def test_legacy_seed_rows_are_marked_demo_on_upgrade(tmp_path):
+    path = tmp_path / "legacy.db"
+    with sqlite3.connect(path) as conn:
+        conn.execute(OLD_QUERIES_DDL)
+        rows = [
+            ("2026-10-27 11:50:47", "/ask", 0, 3100.0, "(demo) answer with citations"),   # seed_db
+            ("2026-10-27 11:50:47", "/report", 1, 9000.0, "severity=serious"),           # seed_db
+            ("2026-10-27 12:31:24", "/evaluate", 0, None, None),                        # real (B-05: no latency)
+            ("2026-10-27 12:54:16", "/", 0, None, None),                                # real, non-business
+        ]
+        conn.executemany(
+            "INSERT INTO queries (timestamp, endpoint, escalated, latency_ms, output_summary) VALUES (?,?,?,?,?)", rows
+        )
+
+    repo = Repository(path)
+    by_endpoint = {r.endpoint: r.source for r in repo.list_queries()}
+    assert by_endpoint == {"/ask": "demo", "/report": "demo", "/evaluate": "live", "/": "live"}
+
+    repo.log_query(endpoint="/ask", latency_ms=5.0)  # a new row without status must stay live
+    Repository(path)                                 # restart: the one-off update does not re-run
+    assert [r.source for r in Repository(path).list_queries() if r.latency_ms == 5.0] == ["live"]
+
+
+async def test_metrics_ignore_non_business_legacy_rows(api_client):
+    repo = get_repository()
+    repo.log_query(endpoint="/docs", status_code=200, latency_ms=1.0)
+    repo.log_query(endpoint="/ask", status_code=200, latency_ms=2.0)
+    body = (await api_client.get("/metrics")).json()
+    assert body["total_queries"] == 1 and body["queries_last_24h"] == 1
+
+
+async def test_input_text_is_not_stored_by_default(api_client, override_classify):
+    import hashlib
+
+    override_classify(_graph_classifier())
+    await api_client.post("/report", json=REPORT)
+    (row,) = _rows("/report")
+    assert row.input_text is None
+    assert row.input_length == len(REPORT["description"])
+    assert row.input_sha256 == hashlib.sha256(REPORT["description"].encode()).hexdigest()
+
+
+async def test_input_text_is_stored_only_when_enabled(api_client, override_classify, monkeypatch):
+    monkeypatch.setenv("STORE_INPUT_TEXT", "true")
+    get_settings.cache_clear()
+    override_classify(_graph_classifier())
+    await api_client.post("/report", json=REPORT)
+    (row,) = _rows("/report")
+    assert row.input_text == REPORT["description"]

@@ -107,6 +107,11 @@ DETERIORATION_TERMS = (
     "injury", "injured", "burn", "burns", "required treatment", "medical intervention",
     "overdose", "anaphylaxis", "anaphylactic", "hospitalizado", "hospitalizada", "ingreso",
     "uci", "cirugía de urgencia", "intervención quirúrgica", "lesión", "quemadura", "sobredosis",
+    # Device-fragment retrieval / removal procedures (e.g. "catheter ... required retrieval").
+    "required retrieval", "retrieval by interventional radiology", "interventional radiology",
+    "endovascular retrieval", "required removal", "surgical removal", "emergency removal",
+    "needed surgery", "needed an operation", "extracción urgente", "extracción de urgencia",
+    "requirió extracción", "fue necesario extraer", "radiología intervencionista",
 )
 NON_SERIOUS_TERMS = (
     "no harm", "not harmed", "unharmed", "no injury", "not injured", "uninjured",

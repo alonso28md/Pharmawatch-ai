@@ -36,6 +36,18 @@
       "class": "III",
       "rule": "Rule 22",
       "reasoning": "Rule 22: active therapeutic devices with an integrated diagnostic function that significantly determines patient management (e.g. closed-loop systems, AEDs) are class III."
+    },
+    {
+      "keywords": ["infusion pump"],
+      "class": "IIb",
+      "rule": "Rule 12 (potentially hazardous administration)",
+      "reasoning": "Rule 12: active devices administering medicinal products are class IIa unless done in a potentially hazardous manner (class IIb). Corpus example: 'infusion pump for contrast media / medicinal products (class IIb, potentially hazardous mode of administration)'. REGULATORY-REVIEW: the example is explanatory text in the corpus file, not the literal Annex VIII text."
+    },
+    {
+      "keywords": ["electrosurgical unit", "electrosurgical generator"],
+      "class": "IIb",
+      "rule": "Rule 9 (potentially hazardous energy exchange)",
+      "reasoning": "Rule 9: active therapeutic devices exchanging energy are class IIa unless potentially hazardous (class IIb). Corpus example: 'electrosurgical unit / active therapeutic device administering energy in a potentially hazardous way (class IIb)'. REGULATORY-REVIEW: the example is explanatory text in the corpus file, not the literal Annex VIII text."
     }
   ],
   "classification_rules": [

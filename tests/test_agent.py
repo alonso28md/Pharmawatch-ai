@@ -219,7 +219,8 @@ def test_undetermined_device_class_is_advisory_not_class_i():
         ("Paediatric ward thermometer", None),       # "aed" must not match inside a word
         ("silicone breast implant", "III"),
         ("automated external defibrillator (AED)", "III"),
-        ("volumetric infusion pump", "IIa"),
+        ("volumetric infusion pump", "IIb"),        # Rule 12 corpus example (A2)
+        ("electrosurgical generator", "IIb"),       # Rule 9 corpus example (A2)
         ("", None),
     ],
 )
@@ -326,3 +327,19 @@ def test_live_unknown_outcome_escalates():
     )
     assert result["escalation_level"] == "blocking"
     assert result["reportable"] is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Catheter fractured inside the vessel and required retrieval by interventional radiology.",
+        "The guidewire tip broke off and needed surgery to remove it.",
+        "Un fragmento del catéter quedó en la vena y requirió extracción por radiología intervencionista.",
+    ],
+)
+def test_severity_signal_detects_fragment_retrieval(text):
+    assert severity_signal(text)["criteria_met"] == ["serious_deterioration"]
+
+
+def test_retrieval_of_data_is_not_a_deterioration_signal():
+    assert severity_signal("Data retrieval from the pump log failed; no patient was involved.")["criteria_met"] == []

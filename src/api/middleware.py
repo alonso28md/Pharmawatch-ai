@@ -7,6 +7,7 @@ exception handlers set `error`. The middleware itself measures latency and recor
 the final HTTP status in a try/finally, so failures are always logged.
 """
 
+import hashlib
 import json
 import logging
 import time
@@ -115,11 +116,23 @@ class ObservabilityMiddleware:
                     logger.exception("Failed to persist request log for %s", path)
 
 
-def db_request_log_sink(repository_provider: Callable) -> RequestLogSink:
-    """Sink that writes RequestLog records to the SQLite query log."""
+def db_request_log_sink(
+    repository_provider: Callable, store_input_text: Callable[[], bool] = lambda: False
+) -> RequestLogSink:
+    """Sink that writes RequestLog records to the SQLite query log.
+
+    Unless STORE_INPUT_TEXT is enabled, the submitted text is replaced by its length and
+    SHA-256 before it reaches the database.
+    """
 
     def sink(log: RequestLog) -> None:
-        repository_provider().log_query(**asdict(log))
+        record = asdict(log)
+        text = record.pop("input_text")
+        record["input_text"] = text if store_input_text() else None
+        if text is not None:
+            record["input_length"] = len(text)
+            record["input_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        repository_provider().log_query(**record)
 
     return sink
 
