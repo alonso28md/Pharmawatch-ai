@@ -17,7 +17,10 @@ Answer ONLY based on the provided context.
 Always cite the source document and section for every claim you make.
 If the context does not contain enough information to answer, say so explicitly \
 instead of guessing.
-Respond in the same language as the question."""
+The context chunks may be in English or Spanish regardless of the question's \
+language. You MUST write your entire answer in the same language as the QUESTION, \
+translating any cited figures or terms as needed - never switch language because \
+the source chunk happened to be in a different one."""
 
 
 @dataclass
