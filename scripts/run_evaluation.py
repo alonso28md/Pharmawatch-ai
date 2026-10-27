@@ -27,7 +27,7 @@ def estimate_calls(dataset_path: Path, split: str, categories, repetitions: int)
     rag = sum(1 for c in cases if c.category == "rag")
     cls = len(cases) - rag
     return {"rag_cases": rag, "classification_cases": cls,
-            "max_calls": repetitions * (2 * rag + 3 * cls)}
+            "max_calls_without_reviewer": repetitions * (2 * rag + 3 * cls)}
 
 
 def main() -> None:
@@ -40,6 +40,7 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--workers", type=int, default=4, help="Concurrent cases (affects latency figures)")
     parser.add_argument("--reviewer", action="store_true", help="Enable the reviewer node")
+    parser.add_argument("--reviewer-model", default=None, help="Model for the reviewer (default: same model)")
     parser.add_argument("--estimate-only", action="store_true", help="Print the call estimate and exit")
     args = parser.parse_args()
 
@@ -52,11 +53,12 @@ def main() -> None:
 
     harness = EvaluationHarness(
         dataset_path, split=args.split, repetitions=args.repetitions,
-        max_workers=args.workers, reviewer_enabled=args.reviewer,
+        max_workers=args.workers, reviewer_enabled=args.reviewer, reviewer_model=args.reviewer_model,
     )
     result = harness.run(categories=args.categories)
     print(render_markdown(result, result.metadata["timestamp"], label))
-    path = write_json_report(result, settings.artifacts_dir_absolute, label + ("_reviewer" if args.reviewer else ""))
+    suffix = ("_reviewer" + (f"_{args.reviewer_model}" if args.reviewer_model else "")) if args.reviewer else ""
+    path = write_json_report(result, settings.artifacts_dir_absolute, label + suffix)
     logger.info("Usage: %s", result.metadata["usage"])
     logger.info("Wrote %s", path)
 

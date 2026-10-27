@@ -79,6 +79,7 @@ class EvaluationHarness:
         judge_llm: LLMClient | None = None,
         retriever: RagRetriever | None = None,
         reviewer_enabled: bool = False,
+        reviewer_model: str | None = None,
         include_unreviewed: bool = False,
     ):
         settings = get_settings()
@@ -92,11 +93,16 @@ class EvaluationHarness:
         self._retriever = retriever or RagRetriever(llm=self.system_llm)
         self._judge = LLMJudge(self.judge_llm)
         self._reviewer_enabled = reviewer_enabled
+        # A separate client (and usage counter) only when the reviewer uses another model.
+        self.reviewer_llm = (
+            AnthropicLLMClient(model=reviewer_model) if reviewer_enabled and reviewer_model else None
+        )
         self._graph = build_graph(
             AgentDeps(
                 llm=self.system_llm,
                 regulatory_context=self._retriever.regulatory_context,
                 reviewer_enabled=reviewer_enabled,
+                reviewer_llm=self.reviewer_llm,
             )
         )
 
@@ -232,10 +238,16 @@ class EvaluationHarness:
             "repetitions": self._repetitions,
             "max_workers": self._max_workers,
             "reviewer_enabled": self._reviewer_enabled,
+            "reviewer_model": getattr(self.reviewer_llm, "model", None) if self.reviewer_llm else (
+                getattr(self.system_llm, "model", None) if self._reviewer_enabled else None),
             "cases": {"rag": sum(1 for c in dataset.cases if c.category == "rag"),
                       "classification": sum(1 for c in dataset.cases if c.category == "classification")},
             "excluded_pending_expert_review": dataset.excluded_for_review,
-            "usage": {"system": self.system_llm.usage.snapshot(), "judge": self.judge_llm.usage.snapshot()},
+            "usage": {
+                "system": self.system_llm.usage.snapshot(),
+                "judge": self.judge_llm.usage.snapshot(),
+                **({"reviewer": self.reviewer_llm.usage.snapshot()} if self.reviewer_llm else {}),
+            },
             "wall_seconds": wall_seconds,
             # Runs where the model API failed: counted as failed cases, absent from metrics.
             "errored_runs": [f"{r['case_id']}#{r['repetition']}" for r in results if "error" in r],

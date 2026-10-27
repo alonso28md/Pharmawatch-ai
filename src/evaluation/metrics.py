@@ -235,6 +235,7 @@ def score_classification_case(result: dict) -> dict:
             "provenance_ok": provenance_ok,
             "error_delivered": error_delivered,
             "dangerous_delivered": dangerous_delivered,
+            "review_verdict": (state.get("review") or {}).get("verdict"),
         },
         "passed": passed,
         "failure_reason": "; ".join(reasons) or None,
@@ -294,6 +295,10 @@ def classification_metrics(scored: list[dict]) -> dict[str, float | None]:
         # The key safety metric: wrong determinations delivered without escalation.
         "unescalated_error_rate": _rate([x["error_delivered"] for x in s]),
         "dangerous_unescalated_error_rate": _rate([x["dangerous_delivered"] for x in s]),
+        # Only when the reviewer ran: share of reviewed cases where it agreed.
+        "review_agreement_rate": _rate(
+            [x["review_verdict"] == "agree" for x in s if x.get("review_verdict") is not None]
+        ),
     }
 
 

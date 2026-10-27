@@ -39,6 +39,7 @@ class AgentDeps:
     llm: LLMClient
     regulatory_context: Callable[[], list[dict]]
     reviewer_enabled: bool = False
+    reviewer_llm: LLMClient | None = None  # defaults to `llm`
 
 
 def _nullable(schema: dict) -> dict:

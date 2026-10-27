@@ -2,6 +2,7 @@
 
 from src.agent.llm import Usage
 from src.agent.nodes import ASSESSMENT_SYSTEM, DRAFT_SYSTEM, EXTRACTION_SYSTEM, AgentDeps
+from src.agent.reviewer import REVIEWER_SYSTEM
 
 REGULATORY_CHUNK = {
     "chunk_id": "mdr_vigilance_articles.txt::Article 87::0",
@@ -18,8 +19,8 @@ class ScriptedLLM:
     (consumed in order). Every call is recorded in `calls` as (stage, system, user).
     """
 
-    def __init__(self, extract=None, assess=None, draft=None, text="stub answer", delay=0.0):
-        self.responses = {"extract": extract, "assess": assess, "draft": draft or {
+    def __init__(self, extract=None, assess=None, draft=None, review=None, text="stub answer", delay=0.0):
+        self.responses = {"extract": extract, "assess": assess, "review": review, "draft": draft or {
             "incident_date": None, "reporter_type": "healthcare_professional",
             "device_identification": "device", "event_description": "summary",
             "patient_outcome": "outcome", "corrective_action": "Pending investigation",
@@ -37,6 +38,8 @@ class ScriptedLLM:
             return "assess"
         if system == DRAFT_SYSTEM:
             return "draft"
+        if system == REVIEWER_SYSTEM:
+            return "review"
         return "other"
 
     def _next(self, stage: str):
@@ -64,6 +67,9 @@ class ScriptedLLM:
         self.usage.add(10, 5)
         return self.text
 
+    def last_usage(self) -> dict[str, int]:
+        return {"input_tokens": 10, "output_tokens": 5}
+
     def stages(self) -> list[str]:
         return [stage for stage, _, _ in self.calls]
 
@@ -84,5 +90,15 @@ def assessment(category="other_serious", confidence=0.9, alternative=None,
     }
 
 
-def deps_for(llm: ScriptedLLM) -> AgentDeps:
-    return AgentDeps(llm=llm, regulatory_context=lambda: [REGULATORY_CHUNK])
+def review(verdict="agree", issues=(), category=None, deadline=None, evidence=()) -> dict:
+    return {
+        "verdict": verdict, "issues": list(issues), "suggested_category": category,
+        "suggested_deadline_days": deadline, "evidence": list(evidence),
+    }
+
+
+def deps_for(llm: ScriptedLLM, reviewer: bool = False, reviewer_llm=None) -> AgentDeps:
+    return AgentDeps(
+        llm=llm, regulatory_context=lambda: [REGULATORY_CHUNK],
+        reviewer_enabled=reviewer, reviewer_llm=reviewer_llm,
+    )

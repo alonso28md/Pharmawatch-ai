@@ -4,6 +4,8 @@ Topology:
   extract_info -> classify_device -> assess_severity -> gate
     gate --(any blocking reason)--> escalate -> finalize -> END
     gate --(clear)--> determine_reporting -> generate_report -> finalize -> END
+  With REVIEWER_ENABLED, determine_reporting -> review, and a non-"agree" review routes
+  to escalate instead of generate_report.
 
 `gate` records the blocking reasons in state (conditional-edge functions cannot write
 state); `finalize` adds advisory reasons and runs the output-validation guardrail.
@@ -17,7 +19,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from src.agent import guardrails
-from src.agent.llm import get_llm_client
+from src.agent.llm import AnthropicLLMClient, get_llm_client
 from src.agent.nodes import (
     AgentDeps,
     assess_severity,
@@ -28,7 +30,9 @@ from src.agent.nodes import (
     finalize,
     generate_report,
 )
+from src.agent.reviewer import review
 from src.agent.state import IncidentState
+from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,10 @@ def gate(state: IncidentState, deps: AgentDeps) -> dict:
 
 def _route_after_gate(state: IncidentState) -> str:
     return "escalate" if state.get("blocking_reasons") else "determine_reporting"
+
+
+def _route_after_review(state: IncidentState) -> str:
+    return "escalate" if state.get("blocking_reasons") else "generate_report"
 
 
 def _bind(node: Callable[[IncidentState, AgentDeps], dict], deps: AgentDeps):
@@ -67,7 +75,15 @@ def build_graph(deps: AgentDeps) -> CompiledStateGraph:
         "gate", _route_after_gate,
         {"escalate": "escalate", "determine_reporting": "determine_reporting"},
     )
-    graph.add_edge("determine_reporting", "generate_report")
+    if deps.reviewer_enabled:
+        graph.add_node("review", _bind(review, deps))
+        graph.add_edge("determine_reporting", "review")
+        graph.add_conditional_edges(
+            "review", _route_after_review,
+            {"escalate": "escalate", "generate_report": "generate_report"},
+        )
+    else:
+        graph.add_edge("determine_reporting", "generate_report")
     graph.add_edge("generate_report", "finalize")
     graph.add_edge("escalate", "finalize")
     graph.add_edge("finalize", END)
@@ -78,7 +94,17 @@ def default_deps() -> AgentDeps:
     """Production collaborators: the shared LLM client and the cached MDR context."""
     from src.rag.retriever import get_retriever
 
-    return AgentDeps(llm=get_llm_client(), regulatory_context=get_retriever().regulatory_context)
+    settings = get_settings()
+    reviewer_llm = (
+        AnthropicLLMClient(model=settings.reviewer_model)
+        if settings.reviewer_enabled and settings.reviewer_model else None
+    )
+    return AgentDeps(
+        llm=get_llm_client(),
+        regulatory_context=get_retriever().regulatory_context,
+        reviewer_enabled=settings.reviewer_enabled,
+        reviewer_llm=reviewer_llm,
+    )
 
 
 _default_graph: CompiledStateGraph | None = None
