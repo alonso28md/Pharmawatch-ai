@@ -1,9 +1,11 @@
 """Tests for the RAG ingestion, vector store, and retriever pipeline."""
 
+import pytest
+
 from src.rag.embeddings import cosine_similarity, embed_text, embed_texts
 from src.rag.ingest import chunk_documents, load_documents
 from src.rag.retriever import RagRetriever
-from tests.conftest import REGULATIONS_DIR, requires_api_key
+from tests.conftest import REGULATIONS_DIR
 
 
 def test_load_documents_finds_all_regulation_files():
@@ -72,7 +74,7 @@ def test_vectorstore_query_retrieves_classification_rule(populated_vectorstore):
     assert any("Annex VIII" in s for s in sources)
 
 
-@requires_api_key
+@pytest.mark.live
 def test_retriever_answer_cites_sources(tmp_path, regulatory_chunks):
     from src.rag.vectorstore import VectorStore
 

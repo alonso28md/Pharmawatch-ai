@@ -13,11 +13,30 @@ from src.rag.ingest import chunk_documents, load_documents  # noqa: E402
 
 REGULATIONS_DIR = PROJECT_ROOT / "data" / "regulations"
 
-HAS_API_KEY = bool(os.environ.get("ANTHROPIC_API_KEY"))
 
-requires_api_key = pytest.mark.skipif(
-    not HAS_API_KEY, reason="ANTHROPIC_API_KEY is not set; skipping live Claude API test"
-)
+def pytest_addoption(parser):
+    parser.addoption(
+        "--live", action="store_true", default=False,
+        help="Run tests marked `live` (real, paid model calls). Requires an API key in the config.",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "live: calls the real model API (opt-in with --live)")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Live tests run only with --live AND a key in the real configuration (env or .env)."""
+    from src.config import get_settings
+
+    has_key = bool(get_settings().anthropic_api_key)
+    get_settings.cache_clear()
+    if config.getoption("--live") and has_key:
+        return
+    reason = "live test: pass --live" if has_key else "live test: no ANTHROPIC_API_KEY in configuration"
+    for item in items:
+        if "live" in item.keywords:
+            item.add_marker(pytest.mark.skip(reason=reason))
 
 
 @pytest.fixture(scope="session", autouse=True)

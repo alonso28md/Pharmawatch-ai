@@ -1,25 +1,35 @@
 """Pydantic v2 request/response models for the PharmaWatch AI REST API."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
+
+MAX_TEXT_LENGTH = 4000
+
+# Whitespace is stripped BEFORE the length limits apply, so "          " is rejected (B-13).
+Description = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=20, max_length=MAX_TEXT_LENGTH)
+]
+Question = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=10, max_length=MAX_TEXT_LENGTH)
+]
+DeviceName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+DeviceClass = Literal["I", "IIa", "IIb", "III"]
 
 
 class ReportRequest(BaseModel):
     """POST /report request body."""
 
-    description: str = Field(
-        ..., min_length=20, description="Free-text description of the adverse event"
-    )
-    device_name: str | None = None
-    device_class: Literal["I", "IIa", "IIb", "III"] | None = None
+    description: Description = Field(..., description="Free-text description of the adverse event")
+    device_name: DeviceName | None = None
+    device_class: DeviceClass | None = None
 
 
 class AskRequest(BaseModel):
-    """POST /ask request body."""
+    """POST /ask request body. `language` forces the answer language; omitted = auto-detect."""
 
-    question: str = Field(..., min_length=10)
-    language: str | None = "en"
+    question: Question
+    language: Literal["en", "es"] | None = None
 
 
 class EvaluateRequest(BaseModel):
@@ -45,12 +55,16 @@ class ReportResponse(BaseModel):
     severity: Literal["serious", "non-serious"] | None
     severity_confidence: float | None
     severity_reasoning: str | None
+    incident_category: str | None
     reportable: bool | None
     report_to: list[str] | None
     deadline_days: int | None
+    deadline_rule: str | None
     device_class: str | None
+    device_class_source: Literal["caller", "extracted", "rule"] | None
     classification_rule: str | None
     escalated_to_human: bool
+    escalation_level: Literal["none", "advisory", "blocking"]
     escalation_reason: str | None = None
     rag_sources: list[Source]
     draft_notification: dict | None = None

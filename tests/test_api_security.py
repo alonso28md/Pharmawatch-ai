@@ -24,7 +24,7 @@ def _reset_rate_limiter():
 @pytest.fixture(autouse=True)
 def _stub_retriever(monkeypatch):
     class Stub:
-        def answer(self, question):
+        def answer(self, question, **kwargs):
             return RagAnswer("ok", [Source("D", "S", "t", 0.9)], 0.9, 1)
 
     monkeypatch.setattr("src.api.routes.ask.get_retriever", lambda: Stub())

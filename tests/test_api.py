@@ -14,7 +14,7 @@ from src.rag.retriever import RagAnswer, Source
 class StubRetriever:
     """Fast, network-free stand-in for RagRetriever used in non-live API tests."""
 
-    def answer(self, question: str) -> RagAnswer:
+    def answer(self, question: str, **kwargs) -> RagAnswer:
         return RagAnswer(
             answer="Stubbed answer for testing.",
             sources=[

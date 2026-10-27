@@ -9,82 +9,72 @@ import json
 
 import pytest
 
-import src.agent.nodes as nodes
 from src.agent.graph import run_incident_classification
-from src.agent.tools import reporting_requirements_tool
+from tests.fakes import ScriptedLLM, assessment, deps_for, extraction
 
 
-def _scripted_llm(monkeypatch, responses: list[dict]) -> None:
-    """Replace the agent's Claude calls with a fixed sequence of JSON responses."""
-    queue = list(responses)
-    monkeypatch.setattr(nodes, "call_claude_json", lambda *a, **k: queue.pop(0))
-    monkeypatch.setattr(nodes, "rag_query_tool", lambda q: {"answer": "stub", "sources": []})
-
-
-@pytest.mark.xfail(strict=True, reason="B-01: contradictory-signal guardrail is dropped by LangGraph")
-def test_b01_contradictory_description_escalates(monkeypatch):
-    _scripted_llm(
-        monkeypatch,
-        [
-            {"device_name": "infusion pump", "device_class": "IIb", "event_type": "injury",
-             "patient_outcome": "hospitalized"},
-            {"severity": "serious", "confidence": 0.9, "reasoning": "hospitalization"},
-            {},
-        ],
+def test_b01_contradictory_description_escalates():
+    llm = ScriptedLLM(
+        extract=extraction(device="infusion pump", outcome="hospitalized", device_class="IIb"),
+        assess=assessment("unanticipated_serious_deterioration", confidence=0.9),
     )
     final = run_incident_classification(
         "During surgery the pump caused an injury requiring hospitalization; "
-        "the ward note says there was no harm to the patient."
+        "the ward note says there was no harm to the patient.",
+        deps=deps_for(llm),
     )
     assert final["escalated_to_human"] is True
+    assert final["reportable"] is None
     assert "contradict" in (final["escalation_reason"] or "").lower()
 
 
-@pytest.mark.xfail(strict=True, reason="B-02: non-fatal unanticipated serious deterioration gets 15 days")
-def test_b02_pacemaker_cardiac_arrest_gets_10_days(monkeypatch):
-    _scripted_llm(
-        monkeypatch,
-        [
-            {"device_name": "implanted pacemaker", "device_class": None, "event_type": "malfunction",
-             "patient_outcome": "cardiac arrest, resuscitated, ICU admission - unanticipated "
-                                "serious deterioration of health"},
-            {"severity": "serious", "confidence": 0.97, "reasoning": "Art. 2(65)(b)"},
-            {"incident_date": None},
-        ],
+def test_b02_pacemaker_cardiac_arrest_gets_10_days():
+    llm = ScriptedLLM(
+        extract=extraction(device="implanted cardiac pacemaker", device_type="pacemaker",
+                           outcome="cardiac arrest, resuscitated, transferred to ICU"),
+        assess=assessment("unanticipated_serious_deterioration", confidence=0.97),
     )
     final = run_incident_classification(
         "An implanted cardiac pacemaker unexpectedly stopped pacing; the patient suffered "
-        "cardiac arrest, was resuscitated and transferred to the ICU."
+        "cardiac arrest, was resuscitated and transferred to the ICU.",
+        deps=deps_for(llm),
     )
     assert final["deadline_days"] == 10
+    assert final["reportable"] is True
 
 
-@pytest.mark.xfail(strict=True, reason="B-02: 'deceased' is missing from the 10-day trigger terms")
 def test_b02_deceased_outcome_gets_10_days():
-    result = reporting_requirements_tool("serious", "malfunction", "III", "patient deceased")
-    assert result["deadline_days"] == 10
+    """A 'deceased' outcome must either get the 10-day deadline or be escalated - never 15 days."""
+    for category in ("death", "other_serious"):
+        llm = ScriptedLLM(
+            extract=extraction(device="ventilator", outcome="patient deceased"),
+            assess=assessment(category, confidence=0.95),
+        )
+        final = run_incident_classification(
+            "The ventilator stopped delivering breaths; the patient was deceased when staff arrived.",
+            deps=deps_for(llm),
+        )
+        assert final["deadline_days"] in (10, None)
+        assert final["deadline_days"] == 10 or final["escalation_level"] == "blocking"
 
 
-@pytest.mark.xfail(strict=True, reason="B-03: an 'unknown' outcome string bypasses the missing-info guardrail")
-def test_b03_unknown_outcome_escalates_instead_of_not_reportable(monkeypatch):
-    _scripted_llm(
-        monkeypatch,
-        [
-            {"device_name": "monitor", "device_class": None, "event_type": "possible malfunction",
-             "patient_outcome": "unknown; nurse unsure whether any patient was affected"},
-            {"severity": "non-serious", "confidence": 0.7, "reasoning": "vague report"},
-        ],
+def test_b03_unknown_outcome_escalates_instead_of_not_reportable():
+    llm = ScriptedLLM(
+        extract=extraction(device="monitor", outcome="unknown; nurse unsure whether any patient was affected",
+                           known=False, event="possible malfunction"),
+        assess=assessment("non_serious", confidence=0.7),
     )
     final = run_incident_classification(
         "A nurse mentioned that something seemed off with a monitor during a shift, but was "
-        "unsure whether it affected any reading or had any effect on the patient."
+        "unsure whether it affected any reading or had any effect on the patient.",
+        deps=deps_for(llm),
     )
     assert final["escalated_to_human"] is True
     assert final["reportable"] is None
 
 
 class _StubRetriever:
-    def answer(self, question):
+    def answer(self, question, **kwargs):
         from src.rag.retriever import RagAnswer, Source
 
         return RagAnswer("stub", [Source("D", "S", "t", 0.9)], 0.9, 1)
@@ -105,16 +95,21 @@ async def test_b05_query_log_records_latency(api_client, monkeypatch):
 
 
 @pytest.mark.xfail(strict=True, reason="B-06: failed requests are never written to the query log")
-async def test_b06_server_error_is_logged(api_client, monkeypatch):
-    from src.api.deps import get_repository
+async def test_b06_server_error_is_logged(api_client):
+    from src.api.deps import get_classification_fn, get_repository
+    from src.api.main import app
 
     def boom(*args, **kwargs):
-        raise RuntimeError("simulated LLM outage")
+        raise RuntimeError("simulated unexpected failure")
 
-    monkeypatch.setattr("src.api.routes.report.run_incident_classification", boom)
-    response = await api_client.post(
-        "/report", json={"description": "A ventilator stopped and the patient died overnight."}
-    )
+    app.dependency_overrides[get_classification_fn] = lambda: boom
+    try:
+        response = await api_client.post(
+            "/report", json={"description": "A ventilator stopped and the patient died overnight."}
+        )
+    finally:
+        app.dependency_overrides.pop(get_classification_fn, None)
+
     assert response.status_code >= 500
     rows = [r for r in get_repository().list_queries() if r.endpoint == "/report"]
     assert rows and rows[0].error

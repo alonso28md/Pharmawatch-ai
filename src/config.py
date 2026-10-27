@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # Anthropic / Claude
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     anthropic_model: str = Field(default="claude-sonnet-5-5", alias="ANTHROPIC_MODEL")
+    llm_timeout_seconds: float = Field(default=60.0, alias="LLM_TIMEOUT_SECONDS")
+    llm_max_retries: int = Field(default=2, alias="LLM_MAX_RETRIES")
 
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")

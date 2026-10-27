@@ -2,11 +2,12 @@
 
 import logging
 import re
+import threading
 import time
 from dataclasses import dataclass
+from functools import lru_cache
 
-import anthropic
-
+from src.agent.llm import LLMClient, get_llm_client
 from src.config import get_settings
 from src.rag.vectorstore import VectorStore
 
@@ -50,6 +51,7 @@ class Source:
     section: str
     text: str
     relevance_score: float
+    chunk_id: str = ""
 
 
 @dataclass
@@ -80,15 +82,17 @@ def _distance_to_relevance(distance: float) -> float:
 class RagRetriever:
     """Retrieves regulatory context and asks Claude to answer with citations."""
 
-    def __init__(
-        self,
-        vectorstore: VectorStore | None = None,
-        client: anthropic.Anthropic | None = None,
-    ):
+    def __init__(self, vectorstore: VectorStore | None = None, llm: LLMClient | None = None):
         settings = get_settings()
         self._settings = settings
         self._vectorstore = vectorstore or VectorStore()
-        self._client = client or anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._llm = llm
+        self._context_lock = threading.Lock()
+        self._regulatory_context: list[dict] | None = None
+
+    @property
+    def llm(self) -> LLMClient:
+        return self._llm or get_llm_client()
 
     def count_indexed_chunks(self) -> int:
         """Number of chunks currently stored in the vector store."""
@@ -99,7 +103,7 @@ class RagRetriever:
         top_k = top_k or self._settings.retrieval_top_k
         return self._vectorstore.query(question, n_results=top_k)
 
-    def answer(self, question: str, top_k: int | None = None) -> RagAnswer:
+    def answer(self, question: str, top_k: int | None = None, language: str | None = None) -> RagAnswer:
         """Retrieve context and generate a cited answer to `question` via Claude."""
         start = time.perf_counter()
         chunks = self.retrieve(question, top_k=top_k)
@@ -114,7 +118,7 @@ class RagRetriever:
             )
 
         context_block = _build_context_block(chunks)
-        answer_language = _detect_answer_language(question)
+        answer_language = {"en": "English", "es": "Spanish"}.get(language or "") or _detect_answer_language(question)
         user_prompt = (
             f"CONTEXT:\n{context_block}\n\n"
             f"QUESTION: {question}\n\n"
@@ -122,13 +126,7 @@ class RagRetriever:
             f"{answer_language}, regardless of the language of the context above)"
         )
 
-        response = self._client.messages.create(
-            model=self._settings.anthropic_model,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        answer_text = next((block.text for block in response.content if block.type == "text"), "")
+        answer_text = self.llm.complete_text(SYSTEM_PROMPT, user_prompt)
 
         sources = [
             Source(
@@ -136,6 +134,7 @@ class RagRetriever:
                 section=chunk["metadata"]["section"],
                 text=chunk["text"][:400],
                 relevance_score=round(_distance_to_relevance(chunk["distance"]), 4),
+                chunk_id=chunk["id"],
             )
             for chunk in chunks
         ]
@@ -146,3 +145,39 @@ class RagRetriever:
         return RagAnswer(
             answer=answer_text, sources=sources, confidence=confidence, latency_ms=latency_ms
         )
+
+    def regulatory_context(self) -> list[dict]:
+        """Fixed MDR context for severity assessment: retrieval only, computed once.
+
+        The questions are constant, so asking the LLM to answer them on every incident
+        (as before) cost one model call (~5 s) per /report for an identical result.
+        """
+        with self._context_lock:
+            if self._regulatory_context is None:
+                seen: dict[str, dict] = {}
+                for query in REGULATORY_CONTEXT_QUERIES:
+                    for chunk in self.retrieve(query, top_k=4):
+                        seen.setdefault(chunk["id"], chunk)
+                self._regulatory_context = [
+                    {
+                        "chunk_id": c["id"],
+                        "document": c["metadata"]["source"],
+                        "section": c["metadata"]["section"],
+                        "text": c["text"],
+                    }
+                    for c in seen.values()
+                ]
+            return self._regulatory_context
+
+
+REGULATORY_CONTEXT_QUERIES = (
+    "What qualifies as a serious incident under MDR Article 2(65)?",
+    "Reporting deadlines for serious incidents under Article 87: death, unanticipated "
+    "serious deterioration, serious public health threat",
+)
+
+
+@lru_cache(maxsize=1)
+def get_retriever() -> RagRetriever:
+    """Process-wide RagRetriever (one vector-store connection, one LLM client)."""
+    return RagRetriever()

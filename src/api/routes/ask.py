@@ -21,7 +21,7 @@ async def ask(request: Request, payload: AskRequest) -> AskResponse:
     question = sanitize_user_text(payload.question, field_name="question")
 
     start = time.perf_counter()
-    result = get_retriever().answer(question)
+    result = get_retriever().answer(question, language=payload.language)
     processing_time_ms = int((time.perf_counter() - start) * 1000)
     request.state.confidence = result.confidence
     request.state.input_text = question[:500]

@@ -9,7 +9,12 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from src.api.deps import get_repository, limiter, log_query_record
 from src.api.errors import install_error_handlers
-from src.api.middleware import LoggingMiddleware, SecurityHeadersMiddleware, TimingMiddleware
+from src.api.middleware import (
+    BodySizeLimitMiddleware,
+    LoggingMiddleware,
+    SecurityHeadersMiddleware,
+    TimingMiddleware,
+)
 from src.api.routes import ask, config, evaluate, health, metrics, report
 from src.config import PROJECT_ROOT, get_settings
 
@@ -38,6 +43,7 @@ app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(LoggingMiddleware, sink=log_query_record)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TimingMiddleware)
+app.add_middleware(BodySizeLimitMiddleware, max_bytes_provider=lambda: get_settings().max_request_bytes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,

@@ -1,5 +1,6 @@
 """Cross-cutting ASGI middleware: timing, security headers, and query logging."""
 
+import json
 import logging
 import time
 from collections.abc import Awaitable, Callable
@@ -21,6 +22,70 @@ def _default_log_sink(record: dict) -> None:
         record["status_code"],
         record["latency_ms"],
     )
+
+
+class BodySizeLimitMiddleware:
+    """Reject request bodies over `max_bytes` with 413, before the app parses them (S-02).
+
+    Checks Content-Length up front and also counts streamed (chunked) bodies.
+    """
+
+    def __init__(self, app, max_bytes_provider: Callable[[], int]):
+        self.app = app
+        self._max_bytes = max_bytes_provider
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        limit = self._max_bytes()
+        headers = dict(scope.get("headers") or [])
+        declared = headers.get(b"content-length")
+        if declared is not None and declared.isdigit() and int(declared) > limit:
+            await self._reject(send, limit)
+            return
+
+        # Buffer the (small, bounded) body up front: raising from inside `receive` would be
+        # swallowed by FastAPI's body parser and turned into a 400.
+        chunks: list[bytes] = []
+        received = 0
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return
+            body = message.get("body", b"")
+            received += len(body)
+            if received > limit:
+                await self._reject(send, limit)
+                return
+            chunks.append(body)
+            if not message.get("more_body", False):
+                break
+
+        replayed = False
+
+        async def replay_receive():
+            nonlocal replayed
+            if not replayed:
+                replayed = True
+                return {"type": "http.request", "body": b"".join(chunks), "more_body": False}
+            return await receive()
+
+        await self.app(scope, replay_receive, send)
+
+    @staticmethod
+    async def _reject(send, limit: int) -> None:
+        body = json.dumps(
+            {"code": "payload_too_large", "message": f"Request body exceeds {limit} bytes", "details": None}
+        ).encode()
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
 
 class TimingMiddleware(BaseHTTPMiddleware):

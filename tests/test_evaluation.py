@@ -2,11 +2,13 @@
 
 import json
 
+import pytest
+
 from src.evaluation import metrics
 from src.evaluation.dataset import load_golden_dataset
 from src.evaluation.harness import EvaluationHarness
 from src.evaluation.reporter import render_markdown, to_json_dict
-from tests.conftest import PROJECT_ROOT, requires_api_key
+from tests.conftest import PROJECT_ROOT
 
 GOLDEN_DATASET_PATH = PROJECT_ROOT / "data" / "golden_dataset.json"
 
@@ -119,7 +121,7 @@ def test_render_markdown_and_json_report(tmp_path):
 # --- full harness integration (requires ANTHROPIC_API_KEY) -------------------------
 
 
-@requires_api_key
+@pytest.mark.live
 def test_harness_runs_small_live_slice(tmp_path):
     tiny_dataset = {
         "cases": [

@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from src.agent.llm import LLMOutputError, LLMUnavailableError
+
 logger = logging.getLogger(__name__)
 
 _STATUS_CODES = {
@@ -80,6 +82,20 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RateLimitExceeded)
     async def _rate_limited(request: Request, exc: RateLimitExceeded) -> JSONResponse:
         return error_response(request, 429, "rate_limited", "Rate limit exceeded. Please slow down.")
+
+    @app.exception_handler(LLMUnavailableError)
+    async def _llm_unavailable(request: Request, exc: LLMUnavailableError) -> JSONResponse:
+        logger.warning("LLM unavailable on %s: %s", request.url.path, exc)
+        return error_response(
+            request, 503, "llm_unavailable", "The language model is temporarily unavailable"
+        )
+
+    @app.exception_handler(LLMOutputError)
+    async def _llm_bad_output(request: Request, exc: LLMOutputError) -> JSONResponse:
+        logger.warning("Unusable LLM output on %s: %s", request.url.path, exc)
+        return error_response(
+            request, 503, "llm_bad_output", "The language model returned an unusable response"
+        )
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:

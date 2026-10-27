@@ -12,6 +12,7 @@ from src.agent.graph import run_incident_classification
 from src.api.errors import ApiError
 from src.config import get_settings
 from src.db.repository import Repository
+from src.rag import retriever as rag_retriever
 from src.rag.retriever import RagRetriever
 
 limiter = Limiter(key_func=get_remote_address)
@@ -19,10 +20,9 @@ limiter = Limiter(key_func=get_remote_address)
 APP_START_TIME = time.monotonic()
 
 
-@lru_cache(maxsize=1)
 def get_retriever() -> RagRetriever:
-    """Process-wide cached RagRetriever (holds the vector store connection)."""
-    return RagRetriever()
+    """Process-wide RagRetriever (shared with the agent's regulatory-context provider)."""
+    return rag_retriever.get_retriever()
 
 
 @lru_cache(maxsize=1)
