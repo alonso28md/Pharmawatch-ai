@@ -26,8 +26,12 @@ def extract_info(state: IncidentState) -> dict:
         '"device_class" (one of "I", "IIa", "IIb", "III", or null if not stated), '
         '"event_type" (short phrase, e.g. "malfunction", "injury", "death", "near-miss", '
         '"overdose", "incorrect dose"), '
-        '"patient_outcome" (short phrase describing what happened to the patient, or null '
-        "if the description does not mention a patient outcome)."
+        '"patient_outcome" (a short phrase - ALWAYS fill this with your best summary of the '
+        "patient impact. If the description explicitly states no patient was involved or no "
+        'harm occurred, write that explicitly (e.g. "no patient involved, no clinical '
+        'impact") - do NOT return null in that case, since "no impact" is a known outcome, '
+        "not missing information. Only return null if the description truly gives no "
+        "indication either way of what happened to any patient.)"
     )
     user = f"INCIDENT DESCRIPTION:\n{state['description']}"
 

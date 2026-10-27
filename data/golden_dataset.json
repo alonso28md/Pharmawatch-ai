@@ -1,0 +1,256 @@
+{
+  "description": "Golden evaluation dataset for PharmaWatch AI. All RAG expectations are grounded in the real regulatory text in data/regulations/; all classification expectations are grounded in MDR Article 2(65) and Article 87 deadlines.",
+  "cases": [
+    {
+      "id": "case_001",
+      "category": "rag",
+      "subcategory": "deadlines",
+      "input": {"question": "What is the reporting deadline for a serious incident under the MDR?"},
+      "expected": {"answer_contains": ["15 days"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 87"}
+    },
+    {
+      "id": "case_002",
+      "category": "rag",
+      "subcategory": "deadlines",
+      "input": {"question": "What is the reporting deadline when a serious incident constitutes a serious public health threat?"},
+      "expected": {"answer_contains": ["2 days"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 87"}
+    },
+    {
+      "id": "case_003",
+      "category": "rag",
+      "subcategory": "deadlines",
+      "input": {"question": "What is the reporting deadline when a serious incident results in death or an unanticipated serious deterioration in a person's health?"},
+      "expected": {"answer_contains": ["10 days"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 87"}
+    },
+    {
+      "id": "case_004",
+      "category": "rag",
+      "subcategory": "deadlines",
+      "input": {"question": "Under MDR Article 88, how are trend reports for non-serious incidents handled?"},
+      "expected": {"answer_contains": ["trend"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 88"}
+    },
+    {
+      "id": "case_005",
+      "category": "rag",
+      "subcategory": "deadlines",
+      "input": {"question": "How quickly must a manufacturer report a field safety corrective action to the competent authority?"},
+      "expected": {"answer_contains": ["field safety corrective action"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 87"}
+    },
+    {
+      "id": "case_006",
+      "category": "rag",
+      "subcategory": "classification",
+      "input": {"question": "How are breast implants classified under MDR Annex VIII?"},
+      "expected": {"answer_contains": ["class III"], "source_document": "MDR 2017/745 Annex VIII (Classification Rules)", "source_section": "Rule 8"}
+    },
+    {
+      "id": "case_007",
+      "category": "rag",
+      "subcategory": "classification",
+      "input": {"question": "Under Rule 6, how are reusable surgical instruments classified?"},
+      "expected": {"answer_contains": ["class I"], "source_document": "MDR 2017/745 Annex VIII (Classification Rules)", "source_section": "Rule 6"}
+    },
+    {
+      "id": "case_008",
+      "category": "rag",
+      "subcategory": "classification",
+      "input": {"question": "How is software intended to provide information used for diagnostic or therapeutic decisions classified under Annex VIII?"},
+      "expected": {"answer_contains": ["class IIa"], "source_document": "MDR 2017/745 Annex VIII (Classification Rules)", "source_section": "Rule 11"}
+    },
+    {
+      "id": "case_009",
+      "category": "rag",
+      "subcategory": "classification",
+      "input": {"question": "What classification applies to active implantable devices such as pacemakers under Annex VIII Rule 8?"},
+      "expected": {"answer_contains": ["class III"], "source_document": "MDR 2017/745 Annex VIII (Classification Rules)", "source_section": "Rule 8"}
+    },
+    {
+      "id": "case_010",
+      "category": "rag",
+      "subcategory": "classification",
+      "input": {"question": "How are automated external defibrillators classified under MDR Annex VIII Rule 22?"},
+      "expected": {"answer_contains": ["class III"], "source_document": "MDR 2017/745 Annex VIII (Classification Rules)", "source_section": "Rule 22"}
+    },
+    {
+      "id": "case_011",
+      "category": "rag",
+      "subcategory": "procedures",
+      "input": {"question": "What is NotificaPS and who can use it to report a medical device incident in Spain?"},
+      "expected": {"answer_contains": ["NotificaPS"], "source_document": "AEMPS - Guía de vigilancia de productos sanitarios", "source_section": "SECCIÓN 2"}
+    },
+    {
+      "id": "case_012",
+      "category": "rag",
+      "subcategory": "procedures",
+      "input": {"question": "What are the duties of the responsable de vigilancia de productos sanitarios in a Spanish healthcare center?"},
+      "expected": {"answer_contains": ["responsable de vigilancia"], "source_document": "AEMPS - Guía de vigilancia de productos sanitarios", "source_section": "SECCIÓN 3"}
+    },
+    {
+      "id": "case_013",
+      "category": "rag",
+      "subcategory": "procedures",
+      "input": {"question": "What is EUDAMED and what information does it collect under MDR Article 92?"},
+      "expected": {"answer_contains": ["EUDAMED"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Article 92"}
+    },
+    {
+      "id": "case_014",
+      "category": "rag",
+      "subcategory": "procedures",
+      "input": {"question": "What criteria define a 'serious incident' under MDR Article 2(65)?"},
+      "expected": {"answer_contains": ["death"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Header"}
+    },
+    {
+      "id": "case_015",
+      "category": "rag",
+      "subcategory": "procedures",
+      "input": {"question": "What is a field safety corrective action (FSCA) under the MDR?"},
+      "expected": {"answer_contains": ["field safety corrective action"], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)", "source_section": "Header"}
+    },
+    {
+      "id": "case_016",
+      "category": "classification",
+      "subcategory": "clearly_serious",
+      "input": {
+        "incident_description": "A ventilator stopped delivering breaths without triggering its alarm during overnight use in the ICU. The patient went into respiratory arrest and died before staff could intervene. The device was a Class III active life-sustaining device.",
+        "device_class": "III"
+      },
+      "expected": {"severity": "serious", "reportable": true, "report_to": ["competent_authority", "manufacturer"], "deadline_days": 10}
+    },
+    {
+      "id": "case_017",
+      "category": "classification",
+      "subcategory": "clearly_serious",
+      "input": {
+        "incident_description": "A patient required emergency surgical intervention after a hip joint replacement implant loosened and caused significant internal bleeding. The implant is a Class III device.",
+        "device_class": "III"
+      },
+      "expected": {"severity": "serious", "reportable": true, "report_to": ["competent_authority", "manufacturer"], "deadline_days": 15}
+    },
+    {
+      "id": "case_018",
+      "category": "classification",
+      "subcategory": "clearly_serious",
+      "input": {
+        "incident_description": "During surgery, the electrosurgical unit produced an unexpected arc that caused a superficial burn on the patient's skin. The device was a Class IIb active therapeutic device. The burn required minor treatment.",
+        "device_class": "IIb",
+        "device_type": "active therapeutic"
+      },
+      "expected": {"severity": "serious", "reportable": true, "report_to": ["competent_authority", "manufacturer"], "deadline_days": 15, "reasoning_contains": ["injury", "treatment"]}
+    },
+    {
+      "id": "case_019",
+      "category": "classification",
+      "subcategory": "clearly_serious",
+      "input": {
+        "incident_description": "A drug-eluting coronary stent appeared to trigger a severe anaphylactic reaction immediately after implantation. The patient required emergency epinephrine administration and was admitted to the ICU for 48 hours.",
+        "device_class": "III"
+      },
+      "expected": {"severity": "serious", "reportable": true, "report_to": ["competent_authority", "manufacturer"], "deadline_days": 15}
+    },
+    {
+      "id": "case_020",
+      "category": "classification",
+      "subcategory": "clearly_serious",
+      "input": {
+        "incident_description": "An insulin infusion pump malfunctioned and delivered five times the programmed dose. The patient developed severe hypoglycemia requiring emergency glucose administration and overnight ICU admission for monitoring.",
+        "device_class": "IIb"
+      },
+      "expected": {"severity": "serious", "reportable": true, "report_to": ["competent_authority", "manufacturer"], "deadline_days": 15}
+    },
+    {
+      "id": "case_021",
+      "category": "classification",
+      "subcategory": "clearly_non_serious",
+      "input": {
+        "incident_description": "A nurse noticed that a disposable syringe plunger was slightly stiff to push during a routine injection. No incorrect dose was delivered, the patient experienced no harm, and the syringe was discarded and replaced with no clinical impact.",
+        "device_class": "I"
+      },
+      "expected": {"severity": "non-serious", "reportable": false}
+    },
+    {
+      "id": "case_022",
+      "category": "classification",
+      "subcategory": "clearly_non_serious",
+      "input": {
+        "incident_description": "A box of surgical gloves was printed with a slightly smaller font size than specified, but all required label information was present, correct, and legible. No device malfunction occurred and there was no patient contact issue.",
+        "device_class": "I"
+      },
+      "expected": {"severity": "non-serious", "reportable": false}
+    },
+    {
+      "id": "case_023",
+      "category": "classification",
+      "subcategory": "clearly_non_serious",
+      "input": {
+        "incident_description": "A digital thermometer displayed a reading 0.1 degrees Celsius off during a routine calibration check in the biomedical engineering workshop. It was flagged and recalibrated before being returned to clinical use; no patient was involved.",
+        "device_class": "IIa"
+      },
+      "expected": {"severity": "non-serious", "reportable": false}
+    },
+    {
+      "id": "case_024",
+      "category": "classification",
+      "subcategory": "clearly_non_serious",
+      "input": {
+        "incident_description": "A blood pressure cuff's Velcro fastener was slightly worn but still held securely during a routine checkup. The reading was accurate and the patient was unaffected by the minor wear.",
+        "device_class": "I"
+      },
+      "expected": {"severity": "non-serious", "reportable": false}
+    },
+    {
+      "id": "case_025",
+      "category": "classification",
+      "subcategory": "clearly_non_serious",
+      "input": {
+        "incident_description": "A software update for a hospital's non-clinical appointment-scheduling module contained a typo in a button label. The typo had no effect on any clinical function, diagnosis, treatment, or patient data.",
+        "device_class": "I"
+      },
+      "expected": {"severity": "non-serious", "reportable": false}
+    },
+    {
+      "id": "case_026",
+      "category": "classification",
+      "subcategory": "ambiguous",
+      "input": {
+        "incident_description": "A report was filed describing a possible issue with equipment used during a procedure, but no further details about the device or the patient outcome were provided."
+      },
+      "expected": {"should_escalate": true}
+    },
+    {
+      "id": "case_027",
+      "category": "classification",
+      "subcategory": "ambiguous",
+      "input": {
+        "incident_description": "A nurse mentioned that something seemed off with a monitor during a shift, but was unsure whether it affected any reading or had any effect on the patient."
+      },
+      "expected": {"should_escalate": true}
+    },
+    {
+      "id": "case_028",
+      "category": "classification",
+      "subcategory": "ambiguous",
+      "input": {
+        "incident_description": "There may have been an issue with an infusion device at some point during a shift; it is unclear what, if anything, happened to the patient as a result."
+      },
+      "expected": {"should_escalate": true}
+    },
+    {
+      "id": "case_029",
+      "category": "classification",
+      "subcategory": "ambiguous",
+      "input": {
+        "incident_description": "A possible problem was noted with a surgical tool, though no additional information is available about what occurred or who, if anyone, was involved."
+      },
+      "expected": {"should_escalate": true}
+    },
+    {
+      "id": "case_030",
+      "category": "classification",
+      "subcategory": "ambiguous",
+      "input": {
+        "incident_description": "Something was reported about a device malfunction, but details about the device type and any patient impact were not recorded at the time."
+      },
+      "expected": {"should_escalate": true}
+    }
+  ]
+}

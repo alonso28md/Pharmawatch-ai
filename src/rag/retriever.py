@@ -1,6 +1,7 @@
 """RAG retrieval chain: embed question -> retrieve chunks -> cited Claude answer."""
 
 import logging
+import re
 import time
 from dataclasses import dataclass
 
@@ -18,9 +19,27 @@ Always cite the source document and section for every claim you make.
 If the context does not contain enough information to answer, say so explicitly \
 instead of guessing.
 The context chunks may be in English or Spanish regardless of the question's \
-language. You MUST write your entire answer in the same language as the QUESTION, \
-translating any cited figures or terms as needed - never switch language because \
-the source chunk happened to be in a different one."""
+language. You MUST write your entire answer in the language stated in the \
+ANSWER LANGUAGE instruction given with each question, translating any cited \
+figures or terms as needed - never switch language because the source chunk \
+happened to be in a different one."""
+
+_SPANISH_MARKERS = re.compile(
+    r"[áéíóúñ¿¡]|(?:\b(qué|cómo|cuál|cuáles|dónde|cuándo|quién|notificación|"
+    r"plazo|vigilancia|incidente|grave|producto sanitario)\b)",
+    re.IGNORECASE,
+)
+
+
+def _detect_answer_language(question: str) -> str:
+    """Best-effort English/Spanish detection, used to force an explicit answer language.
+
+    Relying on the model to infer "respond in the question's language" was found
+    (via live testing) to be unreliable on its own - the model sometimes answered
+    in Spanish for a plainly English question even with all-English retrieved
+    context. Making the target language an explicit instruction fixes this.
+    """
+    return "Spanish" if _SPANISH_MARKERS.search(question) else "English"
 
 
 @dataclass
@@ -71,6 +90,10 @@ class RagRetriever:
         self._vectorstore = vectorstore or VectorStore()
         self._client = client or anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
+    def count_indexed_chunks(self) -> int:
+        """Number of chunks currently stored in the vector store."""
+        return self._vectorstore.count()
+
     def retrieve(self, question: str, top_k: int | None = None) -> list[dict]:
         """Return the top-k most relevant regulatory chunks for `question`."""
         top_k = top_k or self._settings.retrieval_top_k
@@ -91,7 +114,13 @@ class RagRetriever:
             )
 
         context_block = _build_context_block(chunks)
-        user_prompt = f"CONTEXT:\n{context_block}\n\nQUESTION: {question}"
+        answer_language = _detect_answer_language(question)
+        user_prompt = (
+            f"CONTEXT:\n{context_block}\n\n"
+            f"QUESTION: {question}\n\n"
+            f"ANSWER LANGUAGE: {answer_language} (write your entire answer in "
+            f"{answer_language}, regardless of the language of the context above)"
+        )
 
         response = self._client.messages.create(
             model=self._settings.anthropic_model,
