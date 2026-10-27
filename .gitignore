@@ -19,7 +19,8 @@ data/chroma_db/
 *.db
 *.sqlite3
 
-# Evaluation outputs regenerated per run (keep docs/evaluation_report.md tracked in git)
+# Evaluation run outputs (JSON data, never committed)
+artifacts/
 
 # OS / editor
 .DS_Store

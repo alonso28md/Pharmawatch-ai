@@ -2,14 +2,13 @@
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from src.api.deps import get_repository, limiter, log_query_record
+from src.api.errors import install_error_handlers
 from src.api.middleware import LoggingMiddleware, SecurityHeadersMiddleware, TimingMiddleware
 from src.api.routes import ask, config, evaluate, health, metrics, report
 from src.config import PROJECT_ROOT, get_settings
@@ -31,12 +30,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(
-    RateLimitExceeded,
-    lambda request, exc: JSONResponse(
-        status_code=429, content={"detail": "Rate limit exceeded. Please slow down."}
-    ),
-)
+install_error_handlers(app)
 
 get_repository()  # initialize the DB (creates tables) at import time
 
@@ -72,10 +66,3 @@ async def root():
     if static_dir.exists():
         return RedirectResponse(url="/static/index.html")
     return RedirectResponse(url="/docs")
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Catch-all error handler: never leak stack traces to the client."""
-    logger.exception("Unhandled exception on %s", request.url.path)
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})

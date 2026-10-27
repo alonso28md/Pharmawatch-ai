@@ -120,18 +120,20 @@ async def test_b06_server_error_is_logged(api_client, monkeypatch):
     assert rows and rows[0].error
 
 
-@pytest.mark.xfail(strict=True, reason="B-07: /evaluate accepts arbitrary filesystem paths")
 async def test_b07_evaluate_rejects_arbitrary_dataset_path(api_client, monkeypatch, tmp_path):
-    import src.api.routes.evaluate as evaluate_route
+    from src.config import PROJECT_ROOT, get_settings
 
-    # Redirect any report write away from the real docs/ while the bug still exists.
-    fake_root = tmp_path / "fake_root"
-    (fake_root / "docs").mkdir(parents=True)
-    monkeypatch.setattr(evaluate_route, "PROJECT_ROOT", fake_root)
+    # An authorized caller: the bug was that even a legitimate key could point
+    # the harness at any file on disk and overwrite the tracked docs/ reports.
+    monkeypatch.setenv("API_KEY", "test-key")
+    get_settings.cache_clear()
+    docs_before = {p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()}
 
     dataset = tmp_path / "outside.json"
     dataset.write_text(json.dumps({"cases": []}), encoding="utf-8")
-    response = await api_client.post("/evaluate", json={"dataset": str(dataset)})
+    response = await api_client.post(
+        "/evaluate", json={"dataset": str(dataset)}, headers={"X-API-Key": "test-key"}
+    )
 
     assert response.status_code == 422
-    assert not (fake_root / "docs" / "evaluation_report.md").exists()
+    assert {p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()} == docs_before

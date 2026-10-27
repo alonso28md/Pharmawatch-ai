@@ -111,19 +111,16 @@ def render_markdown(result: EvaluationRunResult, timestamp: str, dataset_label: 
     return "\n".join(lines) + "\n"
 
 
-def write_reports(
-    result: EvaluationRunResult,
-    markdown_path: Path | str,
-    json_path: Path | str,
-    dataset_label: str = "default",
-) -> None:
-    """Write both the Markdown report and its JSON sibling (used by CI)."""
-    timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+def write_json_report(result: EvaluationRunResult, artifacts_dir: Path | str, dataset_label: str) -> Path:
+    """Write the run's JSON payload to <artifacts_dir>/evaluations/ and return its path.
 
-    markdown = render_markdown(result, timestamp, dataset_label)
-    Path(markdown_path).write_text(markdown, encoding="utf-8")
-    logger.info("Wrote evaluation report to %s", markdown_path)
-
+    Evaluation output is data, not documentation: it never goes under docs/.
+    """
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    out_dir = Path(artifacts_dir) / "evaluations"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"eval_{dataset_label}_{timestamp}.json"
     payload = to_json_dict(result, timestamp, dataset_label)
-    Path(json_path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    logger.info("Wrote evaluation JSON to %s", json_path)
+    path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    logger.info("Wrote evaluation JSON to %s", path)
+    return path

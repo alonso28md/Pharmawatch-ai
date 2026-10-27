@@ -39,11 +39,37 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:8000", alias="CORS_ORIGINS"
     )
     api_key: str = Field(default="", alias="API_KEY")
+    # Without API_KEY the cost-bearing endpoints are disabled unless this is set explicitly.
+    demo_mode: bool = Field(default=False, alias="DEMO_MODE")
     rate_limit_per_minute: int = Field(default=30, alias="RATE_LIMIT_PER_MINUTE")
+    max_request_bytes: int = Field(default=64_000, alias="MAX_REQUEST_BYTES")
+
+    # Evaluation: only these named datasets (name=file under data/) may be run via the API.
+    evaluation_datasets: str = Field(
+        default="default=golden_dataset.json,v2=golden_dataset_v2.json",
+        alias="EVALUATION_DATASETS",
+    )
+    # Evaluation outputs are data, not docs: written here, never under docs/ or into the DB.
+    artifacts_dir: str = Field(default="artifacts", alias="ARTIFACTS_DIR")
 
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def evaluation_dataset_files(self) -> dict[str, Path]:
+        """Whitelisted dataset name -> absolute path under data/."""
+        datasets: dict[str, Path] = {}
+        for entry in self.evaluation_datasets.split(","):
+            name, sep, filename = entry.strip().partition("=")
+            if sep and name and filename:
+                datasets[name.strip()] = PROJECT_ROOT / "data" / Path(filename.strip()).name
+        return datasets
+
+    @property
+    def artifacts_dir_absolute(self) -> Path:
+        path = Path(self.artifacts_dir)
+        return path if path.is_absolute() else PROJECT_ROOT / path
 
     @property
     def db_path_absolute(self) -> Path:

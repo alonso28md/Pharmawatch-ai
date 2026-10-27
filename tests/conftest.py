@@ -78,6 +78,9 @@ async def api_client(tmp_path, monkeypatch):
     from src.config import get_settings
 
     monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    # Existing API tests exercise the open demo configuration; auth tests override these.
+    monkeypatch.setenv("API_KEY", "")
+    monkeypatch.setenv("DEMO_MODE", "true")
     get_settings.cache_clear()
     deps.get_repository.cache_clear()
 

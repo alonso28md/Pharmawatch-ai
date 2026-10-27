@@ -23,11 +23,10 @@ class AskRequest(BaseModel):
 
 
 class EvaluateRequest(BaseModel):
-    """POST /evaluate request body."""
+    """POST /evaluate request body. `dataset` is a whitelisted name, never a path."""
 
-    dataset: str = "default"
-    categories: list[str] | None = None
-    verbose: bool = False
+    dataset: str = Field(default="default", pattern=r"^[a-z0-9_-]{1,40}$")
+    categories: list[Literal["rag", "classification"]] | None = None
 
 
 class Source(BaseModel):
@@ -73,7 +72,7 @@ class EvaluationSummary(BaseModel):
     total_cases: int
     passed: int
     failed: int
-    pass_rate: float
+    pass_rate: float | None
 
 
 class FailedCase(BaseModel):
@@ -84,12 +83,12 @@ class FailedCase(BaseModel):
 
 
 class EvaluateResponse(BaseModel):
-    """POST /evaluate response body."""
+    """POST /evaluate response body. `report_file` lives in ARTIFACTS_DIR/evaluations/."""
 
     summary: EvaluationSummary
-    metrics: dict[str, float]
+    metrics: dict[str, float | None]
     failed_cases: list[FailedCase]
-    report_path: str
+    report_file: str
     timestamp: str
 
 
