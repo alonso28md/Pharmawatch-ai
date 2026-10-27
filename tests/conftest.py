@@ -34,3 +34,15 @@ def populated_vectorstore(tmp_path, regulatory_chunks) -> VectorStore:
     store = VectorStore(persist_dir=tmp_path / "chroma_db")
     store.add_documents(regulatory_chunks)
     return store
+
+
+@pytest.fixture
+async def api_client():
+    """An httpx.AsyncClient wired directly to the FastAPI app (no network)."""
+    from httpx import ASGITransport, AsyncClient
+
+    from src.api.main import app
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client

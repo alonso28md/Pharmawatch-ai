@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PharmaWatch AI — Demo</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <h1>PharmaWatch AI</h1>
+  <p class="subtitle">AI-powered pharmacovigilance assistant for medical device adverse events.</p>
+
+  <section>
+    <h2>Ask a regulatory question</h2>
+    <label for="ask-question">Question</label>
+    <textarea id="ask-question" rows="3">What is the reporting deadline for a serious incident under the MDR?</textarea>
+    <button id="ask-button" type="button">Ask</button>
+    <pre id="ask-result">(response will appear here)</pre>
+  </section>
+
+  <section>
+    <h2>Classify an adverse event</h2>
+    <label for="report-description">Incident description</label>
+    <textarea id="report-description" rows="4">During a routine MRI scan, the contrast injector malfunctioned and delivered 3x the programmed dose of gadolinium. The patient experienced nausea and was kept for observation for 24 hours.</textarea>
+    <label for="report-device-class">Device class (optional)</label>
+    <select id="report-device-class">
+      <option value="">(unspecified)</option>
+      <option>I</option>
+      <option>IIa</option>
+      <option selected>IIb</option>
+      <option>III</option>
+    </select>
+    <button id="report-button" type="button">Classify</button>
+    <pre id="report-result">(response will appear here)</pre>
+  </section>
+
+  <div class="links">
+    <span class="badge">Full API reference: <a href="/docs">/docs</a></span>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
