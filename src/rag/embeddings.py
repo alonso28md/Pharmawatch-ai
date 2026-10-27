@@ -5,17 +5,19 @@ from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
 
+from src.config import get_settings
+
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIMENSION = 384
 
 
 @lru_cache(maxsize=1)
 def get_embedding_model() -> SentenceTransformer:
     """Load (and cache) the sentence-transformers embedding model."""
-    logger.info("Loading embedding model %s", MODEL_NAME)
-    return SentenceTransformer(MODEL_NAME)
+    model_name = get_settings().embedding_model
+    logger.info("Loading embedding model %s", model_name)
+    return SentenceTransformer(model_name)
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:

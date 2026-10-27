@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Anthropic / Claude
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
     anthropic_model: str = Field(default="claude-sonnet-5-5", alias="ANTHROPIC_MODEL")
+    # Optional independent reviewer node; REVIEWER_MODEL empty = same as ANTHROPIC_MODEL.
+    reviewer_enabled: bool = Field(default=False, alias="REVIEWER_ENABLED")
+    reviewer_model: str = Field(default="", alias="REVIEWER_MODEL")
     # Model used by the evaluation's LLM judge; empty = same as ANTHROPIC_MODEL.
     eval_judge_model: str = Field(default="", alias="EVAL_JUDGE_MODEL")
     llm_timeout_seconds: float = Field(default=60.0, alias="LLM_TIMEOUT_SECONDS")
@@ -34,6 +37,11 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = Field(default="data/chroma_db", alias="CHROMA_PERSIST_DIR")
 
     # RAG chunking / retrieval
+    # Multilingual: questions may be Spanish while most of the corpus is English (B-21).
+    # Changing it requires re-running scripts/ingest_documents.py (checked at startup).
+    embedding_model: str = Field(
+        default="paraphrase-multilingual-MiniLM-L12-v2", alias="EMBEDDING_MODEL"
+    )
     chunk_size: int = Field(default=800, alias="CHUNK_SIZE")
     chunk_overlap: int = Field(default=200, alias="CHUNK_OVERLAP")
     retrieval_top_k: int = Field(default=5, alias="RETRIEVAL_TOP_K")

@@ -34,8 +34,7 @@ def main() -> None:
         settings.chunk_overlap,
     )
 
-    store = VectorStore()
-    store.reset()
+    store = VectorStore(for_reindex=True)
     store.add_documents(chunks)
     logger.info(
         "Vector store ready: %d chunk(s) in collection 'regulations' at %s",

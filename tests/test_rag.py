@@ -130,3 +130,54 @@ def test_retriever_answer_with_scripted_llm(populated_vectorstore):
     assert result.cited_labels == ["C1", "C2", "C9"]
     assert all(len(c["text"]) > 400 or c["text"] for c in result.context)
     assert 0.0 <= result.retrieval_score <= 1.0
+
+
+# --- multilingual retrieval (B-21) ------------------------------------------------------
+
+
+def test_index_built_with_another_embedding_model_is_refused(tmp_path):
+    """A legacy (all-MiniLM) index must not be silently queried with a different model."""
+    import chromadb
+
+    from src.rag.vectorstore import COLLECTION_NAME, EmbeddingModelMismatchError, VectorStore
+
+    client = chromadb.PersistentClient(path=str(tmp_path))
+    legacy = client.get_or_create_collection(name=COLLECTION_NAME)  # no model recorded
+    legacy.add(ids=["a"], documents=["text"], embeddings=[[0.1] * 384])
+    del client
+
+    with pytest.raises(EmbeddingModelMismatchError, match="re-run scripts/ingest_documents.py"):
+        VectorStore(persist_dir=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("question", "expected_document"),
+    [
+        ("¿Cuál es el plazo máximo para notificar un incidente grave según el MDR?",
+         "MDR 2017/745 (Articles 87-92, Vigilance)"),
+        ("¿Cómo se clasifica un desfibrilador externo automático?",
+         "MDR 2017/745 Annex VIII (Classification Rules)"),
+        ("Through which channel are incidents reported to the Spanish agency?",
+         "AEMPS - Guía de vigilancia de productos sanitarios"),
+    ],
+)
+def test_cross_language_retrieval(populated_vectorstore, question, expected_document):
+    sources = [r["metadata"]["source"] for r in populated_vectorstore.query(question, n_results=5)]
+    assert expected_document in sources
+
+
+def test_reindex_mode_replaces_a_legacy_index(tmp_path):
+    import chromadb
+
+    from src.rag.vectorstore import COLLECTION_NAME, VectorStore
+
+    client = chromadb.PersistentClient(path=str(tmp_path))
+    client.get_or_create_collection(name=COLLECTION_NAME).add(
+        ids=["a"], documents=["text"], embeddings=[[0.1] * 384]
+    )
+    del client
+
+    store = VectorStore(persist_dir=tmp_path, for_reindex=True)
+    assert store.count() == 0
+    store.add_documents([{"id": "x", "text": "Article 87 deadline 15 days", "metadata": {"source": "s", "section": "Article 87"}}])
+    assert VectorStore(persist_dir=tmp_path).count() == 1  # now opens without complaint

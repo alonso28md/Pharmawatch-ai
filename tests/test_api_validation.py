@@ -264,3 +264,13 @@ def test_default_client_has_explicit_timeout_and_retries(monkeypatch):
         assert client._client.timeout == 12.5
     finally:
         get_settings.cache_clear()
+
+
+def test_status_errors_keep_the_provider_reason():
+    request = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    body = {"type": "error", "error": {"type": "invalid_request_error",
+                                       "message": "Your credit balance is too low to access the Anthropic API."}}
+    exc = anthropic.BadRequestError("bad", response=httpx2.Response(400, request=request), body=body)
+    client, _ = _client(exc)
+    with pytest.raises(LLMUnavailableError, match="400 invalid_request_error: Your credit balance is too low"):
+        client.complete_text("sys", "user")

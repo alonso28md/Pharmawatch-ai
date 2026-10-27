@@ -61,6 +61,16 @@ class LLMClient(Protocol):
 
     def complete_json(self, system: str, user: str, schema: dict, max_tokens: int = 4096) -> dict: ...
 
+    def last_usage(self) -> dict[str, int]:
+        """Tokens of the most recent call made by the current thread."""
+        ...
+
+
+def _status_error_detail(exc: anthropic.APIStatusError) -> str:
+    error = (exc.body or {}).get("error", {}) if isinstance(exc.body, dict) else {}
+    message = str(error.get("message") or "")[:200]
+    return f"{type(exc).__name__} {exc.status_code} {error.get('type', '')}: {message}".strip()
+
 
 class AnthropicLLMClient:
     """LLMClient backed by the Anthropic Messages API."""
@@ -74,6 +84,10 @@ class AnthropicLLMClient:
             max_retries=settings.llm_max_retries,
         )
         self.usage = Usage()
+        self._local = threading.local()
+
+    def last_usage(self) -> dict[str, int]:
+        return getattr(self._local, "last", {"input_tokens": 0, "output_tokens": 0})
 
     def _create(self, system: str, user: str, max_tokens: int, **extra):
         try:
@@ -84,12 +98,21 @@ class AnthropicLLMClient:
                 messages=[{"role": "user", "content": user}],
                 **extra,
             )
-        except (anthropic.APIConnectionError, anthropic.APIStatusError) as exc:
-            # APIConnectionError covers timeouts; APIStatusError covers 4xx/5xx after retries.
+        except anthropic.APIStatusError as exc:
+            # 4xx/5xx after the SDK's retries. Keep the provider's status and message (no
+            # secrets) - e.g. an exhausted credit balance arrives as a 400 and must be visible.
+            detail = _status_error_detail(exc)
+            logger.warning("LLM call failed: %s", detail)
+            raise LLMUnavailableError(detail) from exc
+        except anthropic.APIConnectionError as exc:  # includes APITimeoutError
             logger.warning("LLM call failed: %s", type(exc).__name__)
             raise LLMUnavailableError(type(exc).__name__) from exc
 
         self.usage.add(response.usage.input_tokens, response.usage.output_tokens)
+        self._local.last = {
+            "input_tokens": response.usage.input_tokens,
+            "output_tokens": response.usage.output_tokens,
+        }
         if response.stop_reason == "refusal":
             raise LLMUnavailableError("model declined the request")
         if response.stop_reason == "max_tokens":
