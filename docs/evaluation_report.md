@@ -1,6 +1,6 @@
 # PharmaWatch AI — Evaluation Report
 
-Generated: 2026-10-27T11:33:43Z
+Generated: 2026-10-27T12:36:03Z
 Model: claude-sonnet-5-5
 Dataset: golden_dataset.json (30 cases)
 
@@ -16,13 +16,13 @@ Dataset: golden_dataset.json (30 cases)
 | Metric | Score | Threshold | Status |
 |---|---|---|---|
 | Retrieval Accuracy | 100.0% | >= 85% | PASS |
-| Answer Faithfulness | 83.2% | >= 90% | FAIL |
+| Answer Faithfulness | 84.1% | >= 90% | FAIL |
 | Hallucination Rate | 0.0% | <= 10% | PASS |
 | Classification Accuracy | 90.0% | >= 80% | PASS |
 | Reportability Accuracy | 90.0% | >= 85% | PASS |
 | Escalation Appropriateness | 100.0% | >= 75% | PASS |
-| Latency p50 | 8538 ms | < 5000 ms | FAIL |
-| Latency p95 | 14836 ms | < 15000 ms | PASS |
+| Latency p50 | 7686 ms | < 5000 ms | FAIL |
+| Latency p95 | 13967 ms | < 15000 ms | PASS |
 | Source Citation Rate | 100.0% | >= 95% | PASS |
 
 ## Failed Cases
