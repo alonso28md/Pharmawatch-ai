@@ -1,30 +1,49 @@
-FROM python:3.11-slim
+# --- build stage: compilers live only here ------------------------------------------
+FROM python:3.14-slim AS builder
 
-WORKDIR /app
-
-# System dependencies (build tools needed by some wheels; curl for the healthcheck)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first (better layer caching)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH" \
+    HF_HOME=/opt/hf \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Copy source code and data
+COPY requirements.txt requirements.lock ./
+RUN pip install --no-cache-dir -r requirements.txt -c requirements.lock
+
 COPY src/ src/
 COPY data/ data/
 COPY scripts/ scripts/
 COPY config/ config/
-COPY static/ static/
 
-# Index the regulatory documents into the vector store at build time
+# Index the regulatory documents (downloads the embedding model into HF_HOME once).
 RUN python scripts/ingest_documents.py
 
+# --- runtime stage --------------------------------------------------------------------
+FROM python:3.14-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 app
+
+WORKDIR /app
+ENV PATH="/opt/venv/bin:$PATH" \
+    HF_HOME=/opt/hf \
+    HF_HUB_OFFLINE=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/hf /opt/hf
+COPY --from=builder --chown=app:app /app /app
+COPY --chown=app:app static/ static/
+
+USER app
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi.middleware import SlowAPIMiddleware
 
+from src import __version__
 from src.api.deps import get_repository, limiter
 from src.api.errors import install_error_handlers
 from src.api.middleware import (
@@ -31,7 +32,7 @@ app = FastAPI(
         "MDR 2017/745 and AEMPS regulatory text with a LangGraph incident-"
         "classification agent, backed by a reproducible evaluation harness."
     ),
-    version="1.0.0",
+    version=__version__,
 )
 
 app.state.limiter = limiter

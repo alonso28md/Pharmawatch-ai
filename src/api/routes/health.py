@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter
 
+from src import __version__
 from src.api.deps import get_repository, get_retriever, uptime_seconds
 from src.api.schemas import HealthResponse
 from src.config import get_settings
@@ -38,7 +39,7 @@ def health() -> HealthResponse:
     healthy = vectorstore_status == "connected" and database_status == "connected"
     return HealthResponse(
         status="healthy" if healthy else "degraded",
-        version="1.0.0",
+        version=__version__,
         vectorstore=vectorstore_status,
         vectorstore_documents=document_count,
         database=database_status,

@@ -1,6 +1,6 @@
 [project]
 name = "pharmawatch-ai"
-version = "0.1.0"
+dynamic = ["version"]
 description = "AI-powered pharmacovigilance assistant for medical device adverse event classification and regulatory reporting"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,3 +23,6 @@ asyncio_mode = "auto"
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "src.__version__" }
