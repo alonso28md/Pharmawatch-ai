@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Request
 from src.api.deps import get_classification_fn, get_repository, limiter, verify_api_key
 from src.api.middleware import RequestLog, get_request_log
 from src.api.schemas import ReportRequest, ReportResponse, Source
-from src.api.security import sanitize_user_text
+from src.api.security import INJECTION_ADVISORY, sanitize_user_text
 from src.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,18 @@ def build_report_response(incident_id: str, final_state: dict, processing_time_m
     )
 
 
+def _flag_possible_injection(final_state: dict) -> dict:
+    """Surface a suspected injection as an advisory escalation (never a silent change)."""
+    reason = " ".join(filter(None, [final_state.get("escalation_reason"), INJECTION_ADVISORY]))
+    level = final_state.get("escalation_level", "none")
+    return {
+        **final_state,
+        "escalated_to_human": True,
+        "escalation_level": "blocking" if level == "blocking" else "advisory",
+        "escalation_reason": reason,
+    }
+
+
 @router.post("/report", response_model=ReportResponse, tags=["agent"], dependencies=[Depends(verify_api_key)])
 @limiter.limit(lambda: f"{get_settings().rate_limit_per_minute}/minute")
 async def report(
@@ -64,10 +76,9 @@ async def report(
     Every classified incident is persisted (without its free-text description) and can
     be fetched again with GET /reports/{incident_id}.
     """
-    description = sanitize_user_text(payload.description, field_name="description")
-    device_name = (
-        sanitize_user_text(payload.device_name, field_name="device_name") if payload.device_name else None
-    )
+    sanitized = sanitize_user_text(payload.description, field_name="description")
+    device = sanitize_user_text(payload.device_name, field_name="device_name") if payload.device_name else None
+    description, device_name = sanitized.text, device.text if device else None
     request_log.input_text = description[:500]
 
     start = time.perf_counter()
@@ -76,6 +87,8 @@ async def report(
         classify, description, device_name_hint=device_name or None, device_class_hint=payload.device_class
     )
     processing_time_ms = int((time.perf_counter() - start) * 1000)
+    if sanitized.injection_suspected or (device and device.injection_suspected):
+        final_state = _flag_possible_injection(final_state)
 
     request_log.severity = final_state.get("severity")
     request_log.reportable = final_state.get("reportable")

@@ -25,7 +25,7 @@ async def ask(
     request_log: Annotated[RequestLog, Depends(get_request_log)],
 ) -> AskResponse:
     """Answer a regulatory question with citations from the indexed documents."""
-    question = sanitize_user_text(payload.question, field_name="question")
+    question = sanitize_user_text(payload.question, field_name="question").text
     request_log.input_text = question[:500]
 
     start = time.perf_counter()

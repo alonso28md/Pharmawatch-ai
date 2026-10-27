@@ -17,6 +17,7 @@ def _compact_result(r: dict) -> dict:
     out = {k: r[k] for k in keep if k in r}
     if "answer" in r:
         out.update(question=r["question"], answer=r["answer"], cited_labels=r["cited_labels"],
+                   context=[{"label": c["label"], "chunk_id": c["chunk_id"]} for c in r.get("context", [])],
                    sources=r["sources"], judge=r["judge"], numeric=r["numeric"])
     if "final_state" in r:
         out.update(description=r["description"], final_state=r["final_state"])

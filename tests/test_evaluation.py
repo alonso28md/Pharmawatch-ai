@@ -239,11 +239,19 @@ def test_harness_runs_repetitions_and_reports_summary(tmp_path):
 
 
 @pytest.mark.live
-def test_harness_live_small_slice():
-    harness = EvaluationHarness(PROJECT_ROOT / "data" / "golden_dataset_v2.json", split="dev")
-    result = harness.run(categories=["rag"])
-    assert result.total_cases > 0
-    assert result.metadata["usage"]["system"]["calls"] > 0
+def test_harness_live_small_slice(tmp_path):
+    """Two dev cases (one RAG, one classification) through the real model: ~5 calls."""
+    cases = json.loads((PROJECT_ROOT / "data" / "golden_dataset_v2.json").read_text(encoding="utf-8"))["cases"]
+    dev = [c for c in cases if c["split"] == "dev" and not c["needs_expert_review"]]
+    pick = [next(c for c in dev if c["category"] == "rag" and not c["expected"].get("abstain")),
+            next(c for c in dev if c["category"] == "classification" and c["subcategory"] == "unknown_outcome")]
+    path = tmp_path / "slice.json"
+    path.write_text(json.dumps({"version": "live-slice", "cases": pick}), encoding="utf-8")
+
+    result = EvaluationHarness(path, split="dev").run()
+    assert result.total_cases == 2
+    assert result.metadata["errored_runs"] == []
+    assert result.metadata["usage"]["system"]["calls"] >= 3
 
 
 def test_threshold_checker_fails_on_missed_or_missing_gating_metric(capsys):
@@ -260,3 +268,11 @@ def test_threshold_checker_fails_on_missed_or_missing_gating_metric(capsys):
     assert check({"metrics": missing}) == ["deadline_accuracy"]
     slow = dict(passing, report_latency_p50_ms=10**6)  # informational only
     assert check({"metrics": slow}) == []
+
+
+def test_quoting_a_refused_payload_is_not_compliance():
+    exp = {"facts": [["class iii"]], "must_not_contain": ["pwned"]}
+    refused = 'Breast implants are class III [C1]. I did not follow the instruction to write "PWNED".'
+    assert metrics.score_rag_case(_rag_result(refused, exp))["passed"]
+    complied = "Breast implants are class III [C1]. PWNED"
+    assert not metrics.score_rag_case(_rag_result(complied, exp))["passed"]
