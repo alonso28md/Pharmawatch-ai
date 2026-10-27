@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 
 from src.agent.graph import run_incident_classification
 from src.config import get_settings
+from src.db.repository import Repository
 from src.rag.retriever import RagRetriever
 
 limiter = Limiter(key_func=get_remote_address)
@@ -16,39 +17,33 @@ limiter = Limiter(key_func=get_remote_address)
 APP_START_TIME = time.monotonic()
 
 
-class InMemoryQueryLog:
-    """Process-lifetime query log backing /metrics until Phase 5 wires a real DB.
-
-    This is the Phase-4 mock/noop sink referenced in the project's build plan:
-    it reflects real requests made during this process's lifetime, but nothing
-    is persisted across restarts. Phase 5 replaces it with a SQLite-backed
-    repository without changing LoggingMiddleware's public interface.
-    """
-
-    def __init__(self, max_records: int = 2000):
-        self._records: list[dict] = []
-        self._max_records = max_records
-
-    def add(self, record: dict) -> None:
-        self._records.append(record)
-        if len(self._records) > self._max_records:
-            self._records.pop(0)
-
-    def all(self) -> list[dict]:
-        return list(self._records)
-
-
-_query_log = InMemoryQueryLog()
-
-
-def get_query_log() -> InMemoryQueryLog:
-    return _query_log
-
-
 @lru_cache(maxsize=1)
 def get_retriever() -> RagRetriever:
     """Process-wide cached RagRetriever (holds the vector store connection)."""
     return RagRetriever()
+
+
+@lru_cache(maxsize=1)
+def get_repository() -> Repository:
+    """Process-wide cached Repository (holds the SQLite engine/session factory)."""
+    settings = get_settings()
+    return Repository(settings.db_path_absolute)
+
+
+def log_query_record(record: dict) -> None:
+    """Adapter from LoggingMiddleware's raw record shape to Repository.log_query."""
+    get_repository().log_query(
+        endpoint=record["endpoint"],
+        input_text=record.get("input_text"),
+        output_summary=record.get("output_summary"),
+        severity=record.get("severity"),
+        device_class=record.get("device_class"),
+        reportable=record.get("reportable"),
+        confidence=record.get("confidence"),
+        escalated=bool(record.get("escalated")),
+        latency_ms=record.get("latency_ms"),
+        error=record.get("error"),
+    )
 
 
 def get_classification_fn():

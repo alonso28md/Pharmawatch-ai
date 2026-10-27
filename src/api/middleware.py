@@ -14,7 +14,7 @@ QueryLogSink = Callable[[dict], None]
 
 
 def _default_log_sink(record: dict) -> None:
-    """No-op default sink: logs via `logging` only. Phase 5 wires a real DB-backed sink."""
+    """Fallback sink (used only if no DB-backed sink is injected): logs via `logging`."""
     logger.info(
         "query endpoint=%s status=%s latency_ms=%s",
         record["endpoint"],
@@ -53,7 +53,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    """Logs every request/response to a pluggable sink (DB-backed in Phase 5)."""
+    """Logs every request/response to a pluggable sink (a real DB-backed repository by default)."""
 
     def __init__(self, app, sink: QueryLogSink | None = None):
         super().__init__(app)
@@ -76,8 +76,11 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 "status_code": response.status_code,
                 "latency_ms": latency_ms,
+                "input_text": getattr(request.state, "input_text", None),
+                "output_summary": getattr(request.state, "output_summary", None),
                 "severity": getattr(request.state, "severity", None),
-                "escalated": getattr(request.state, "escalated", None),
+                "reportable": getattr(request.state, "reportable", None),
+                "escalated": getattr(request.state, "escalated", False),
                 "device_class": getattr(request.state, "device_class", None),
                 "confidence": getattr(request.state, "confidence", None),
                 "error": getattr(request.state, "error", None),

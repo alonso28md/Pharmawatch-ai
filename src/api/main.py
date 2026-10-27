@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from src.api.deps import get_query_log, limiter
+from src.api.deps import get_repository, limiter, log_query_record
 from src.api.middleware import LoggingMiddleware, SecurityHeadersMiddleware, TimingMiddleware
 from src.api.routes import ask, config, evaluate, health, metrics, report
 from src.config import PROJECT_ROOT, get_settings
@@ -38,8 +38,10 @@ app.add_exception_handler(
     ),
 )
 
+get_repository()  # initialize the DB (creates tables) at import time
+
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(LoggingMiddleware, sink=get_query_log().add)
+app.add_middleware(LoggingMiddleware, sink=log_query_record)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TimingMiddleware)
 app.add_middleware(

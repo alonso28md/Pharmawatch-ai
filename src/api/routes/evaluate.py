@@ -1,13 +1,14 @@
 """POST /evaluate — run the evaluation harness against the golden dataset."""
 
 import asyncio
+import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
 
-from src.api.deps import limiter, verify_api_key
+from src.api.deps import get_repository, limiter, verify_api_key
 from src.api.schemas import EvaluateRequest, EvaluateResponse, EvaluationSummary, FailedCase
 from src.config import PROJECT_ROOT, get_settings
 from src.evaluation.harness import EvaluationHarness
@@ -41,6 +42,14 @@ async def evaluate(request: Request, payload: EvaluateRequest) -> EvaluateRespon
     report_path = docs_dir / "evaluation_report.md"
     json_path = docs_dir / "evaluation_report.json"
     write_reports(result, report_path, json_path, dataset_label=dataset_path.name)
+
+    get_repository().log_evaluation_run(
+        total_cases=result.total_cases,
+        passed=result.passed,
+        failed=result.failed,
+        metrics_json=json.dumps(result.metrics),
+        report_path=str(report_path.relative_to(PROJECT_ROOT)),
+    )
 
     timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     pass_rate = round(result.passed / result.total_cases, 4) if result.total_cases else 0.0

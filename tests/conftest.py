@@ -37,8 +37,20 @@ def populated_vectorstore(tmp_path, regulatory_chunks) -> VectorStore:
 
 
 @pytest.fixture
-async def api_client():
-    """An httpx.AsyncClient wired directly to the FastAPI app (no network)."""
+async def api_client(tmp_path, monkeypatch):
+    """An httpx.AsyncClient wired to the FastAPI app, backed by an isolated test DB.
+
+    Without this, importing src.api.main (which initializes the DB-backed
+    LoggingMiddleware sink at import time) would write to the real project
+    database at data/pharmawatch.db - polluting it with test traffic.
+    """
+    from src.api import deps
+    from src.config import get_settings
+
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test.db"))
+    get_settings.cache_clear()
+    deps.get_repository.cache_clear()
+
     from httpx import ASGITransport, AsyncClient
 
     from src.api.main import app
@@ -46,3 +58,6 @@ async def api_client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
+
+    deps.get_repository.cache_clear()
+    get_settings.cache_clear()

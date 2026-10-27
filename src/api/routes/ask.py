@@ -24,6 +24,8 @@ async def ask(request: Request, payload: AskRequest) -> AskResponse:
     result = get_retriever().answer(question)
     processing_time_ms = int((time.perf_counter() - start) * 1000)
     request.state.confidence = result.confidence
+    request.state.input_text = question[:500]
+    request.state.output_summary = result.answer[:500]
 
     return AskResponse(
         answer=result.answer,

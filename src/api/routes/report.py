@@ -37,9 +37,15 @@ async def report(request: Request, payload: ReportRequest) -> ReportResponse:
     processing_time_ms = int((time.perf_counter() - start) * 1000)
 
     request.state.severity = final_state.get("severity")
+    request.state.reportable = final_state.get("reportable")
     request.state.escalated = final_state.get("escalated_to_human", False)
     request.state.device_class = final_state.get("device_class")
     request.state.confidence = final_state.get("severity_confidence")
+    request.state.input_text = description[:500]
+    request.state.output_summary = (
+        f"severity={final_state.get('severity')}, reportable={final_state.get('reportable')}, "
+        f"deadline_days={final_state.get('deadline_days')}"
+    )
 
     rag_sources = [
         Source(document=s["document"], section=s["section"], text=s["text"])

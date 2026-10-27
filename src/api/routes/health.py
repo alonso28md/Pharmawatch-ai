@@ -4,7 +4,7 @@ import logging
 
 from fastapi import APIRouter
 
-from src.api.deps import get_retriever, uptime_seconds
+from src.api.deps import get_repository, get_retriever, uptime_seconds
 from src.api.schemas import HealthResponse
 from src.config import get_settings
 
@@ -24,12 +24,20 @@ async def health() -> HealthResponse:
         document_count = 0
         vectorstore_status = "unavailable"
 
+    try:
+        get_repository().list_queries(limit=1)
+        database_status = "connected"
+    except Exception:
+        logger.exception("Database health check failed")
+        database_status = "unavailable"
+
+    healthy = vectorstore_status == "connected" and database_status == "connected"
     return HealthResponse(
-        status="healthy" if vectorstore_status == "connected" else "degraded",
+        status="healthy" if healthy else "degraded",
         version="1.0.0",
         vectorstore=vectorstore_status,
         vectorstore_documents=document_count,
-        database="connected",
+        database=database_status,
         model=settings.anthropic_model,
         uptime_seconds=uptime_seconds(),
     )

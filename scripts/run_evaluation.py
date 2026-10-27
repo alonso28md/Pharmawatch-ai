@@ -2,13 +2,15 @@
 """Run the golden-dataset evaluation harness against the real system and write reports."""
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import PROJECT_ROOT  # noqa: E402
+from src.config import PROJECT_ROOT, get_settings  # noqa: E402
+from src.db.repository import Repository  # noqa: E402
 from src.evaluation.harness import EvaluationHarness  # noqa: E402
 from src.evaluation.reporter import write_reports  # noqa: E402
 
@@ -38,12 +40,24 @@ def main() -> None:
 
     docs_dir = PROJECT_ROOT / "docs"
     docs_dir.mkdir(parents=True, exist_ok=True)
+    report_path = docs_dir / "evaluation_report.md"
     write_reports(
         result,
-        markdown_path=docs_dir / "evaluation_report.md",
+        markdown_path=report_path,
         json_path=docs_dir / "evaluation_report.json",
         dataset_label=Path(args.dataset).name,
     )
+
+    settings = get_settings()
+    repository = Repository(settings.db_path_absolute)
+    repository.log_evaluation_run(
+        total_cases=result.total_cases,
+        passed=result.passed,
+        failed=result.failed,
+        metrics_json=json.dumps(result.metrics),
+        report_path=str(report_path.relative_to(PROJECT_ROOT)),
+    )
+    logger.info("Logged evaluation run to %s", settings.db_path_absolute)
 
 
 if __name__ == "__main__":
