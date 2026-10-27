@@ -1,0 +1,31 @@
+services:
+  pharmawatch:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DB_PATH=${DB_PATH:-data/pharmawatch.db}
+      - CHROMA_PERSIST_DIR=${CHROMA_PERSIST_DIR:-data/chroma_db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
+      - API_KEY=${API_KEY:-}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-30}
+    volumes:
+      # Named volume (not a host bind-mount): Docker seeds it from the image's
+      # /app/data on first creation, so the chroma_db built during `docker
+      # build` (scripts/ingest_documents.py) survives into the running
+      # container, and both chroma_db/ and pharmawatch.db persist across
+      # `docker compose down`/`up`. A host bind-mount of an empty ./data would
+      # instead shadow and wipe the pre-ingested vector store on a fresh clone.
+      - pharmawatch_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pharmawatch_data:
