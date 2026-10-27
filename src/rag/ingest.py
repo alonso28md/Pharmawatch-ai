@@ -11,8 +11,15 @@ from src.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+# Header lines only - not body text that happens to start with "Article 87(1) ..." after a
+# line wrap (B-08). Article and SECCIÓN headers use an em dash title; Annex VIII rules
+# appear as numbered lines such as "5.4. Rule 8", labelled "Rule 8".
 SECTION_HEADER_PATTERN = re.compile(
-    r"^(Article \d+[^\n]*|Rule \d+\b[^\n]*|SECCIÓN \d+[^\n]*|ANNEX VIII[^\n]*|CHAPTER [IVX]+[^\n]*)",
+    r"^(?:"
+    r"(?P<article>Article \d+ — [^\n]+)"
+    r"|(?:\d+\.\d+\.\s+)?(?P<rule>Rule \d+)[ \t]*$"
+    r"|(?P<other>SECCIÓN \d+ — [^\n]+|ANNEX VIII[^\n]*|CHAPTER [IVX]+ — [^\n]+|QUICK REFERENCE[^\n]*)"
+    r")",
     re.MULTILINE,
 )
 
@@ -66,7 +73,7 @@ def _split_into_sections(text: str) -> list[tuple[str, str]]:
     for i, match in enumerate(matches):
         start = match.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        label = match.group(1).strip()
+        label = (match.group("article") or match.group("rule") or match.group("other")).strip()
         spans.append((label, text[start:end].strip()))
     return spans
 

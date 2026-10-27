@@ -1,0 +1,29 @@
+{
+  "description": "Evaluation thresholds checked against the mean over repetitions. gate=false metrics are reported but do not fail CI (latency depends on the runner and API load).",
+  "metrics": {
+    "retrieval_accuracy": {"op": ">=", "value": 0.85, "gate": true},
+    "section_retrieval_accuracy": {"op": ">=", "value": 0.7, "gate": true},
+    "answer_accuracy": {"op": ">=", "value": 0.8, "gate": true},
+    "abstention_accuracy": {"op": ">=", "value": 0.8, "gate": true},
+    "false_abstention_rate": {"op": "<=", "value": 0.1, "gate": true},
+    "source_citation_rate": {"op": ">=", "value": 0.95, "gate": true},
+    "answer_faithfulness": {"op": ">=", "value": 0.9, "gate": true},
+    "hallucination_rate": {"op": "<=", "value": 0.1, "gate": true},
+    "numeric_grounding_rate": {"op": ">=", "value": 0.98, "gate": true},
+    "classification_accuracy": {"op": ">=", "value": 0.85, "gate": true},
+    "category_accuracy": {"op": ">=", "value": 0.75, "gate": true},
+    "reportability_accuracy": {"op": ">=", "value": 0.85, "gate": true},
+    "deadline_accuracy": {"op": ">=", "value": 0.85, "gate": true},
+    "recipients_accuracy": {"op": ">=", "value": 0.9, "gate": true},
+    "provenance_accuracy": {"op": ">=", "value": 0.9, "gate": true},
+    "escalation_precision": {"op": ">=", "value": 0.75, "gate": true},
+    "escalation_recall": {"op": ">=", "value": 0.9, "gate": true},
+    "over_escalation_rate": {"op": "<=", "value": 0.2, "gate": true},
+    "unescalated_error_rate": {"op": "<=", "value": 0.1, "gate": true},
+    "dangerous_unescalated_error_rate": {"op": "<=", "value": 0.02, "gate": true},
+    "rag_latency_p50_ms": {"op": "<", "value": 8000, "gate": false},
+    "rag_latency_p95_ms": {"op": "<", "value": 15000, "gate": false},
+    "report_latency_p50_ms": {"op": "<", "value": 12000, "gate": false},
+    "report_latency_p95_ms": {"op": "<", "value": 20000, "gate": false}
+  }
+}

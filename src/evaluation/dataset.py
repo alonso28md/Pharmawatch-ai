@@ -1,4 +1,4 @@
-"""Loader for the golden evaluation dataset."""
+"""Loader for golden evaluation datasets (v1 and v2 formats)."""
 
 import json
 import logging
@@ -17,26 +17,60 @@ class GoldenCase:
     subcategory: str
     input: dict = field(default_factory=dict)
     expected: dict = field(default_factory=dict)
+    split: str = "test"
+    language: str = "en"
+    tags: list[str] = field(default_factory=list)
+    label_source: str = "unspecified"
+    needs_expert_review: bool = False
 
 
-def load_golden_dataset(path: Path | str, categories: list[str] | None = None) -> list[GoldenCase]:
-    """Load golden-dataset cases from `path`, optionally filtered by category."""
+@dataclass
+class GoldenDataset:
+    cases: list[GoldenCase]
+    version: str
+    excluded_for_review: list[str]
+
+
+def load_dataset(
+    path: Path | str,
+    categories: list[str] | None = None,
+    split: str | None = None,
+    include_unreviewed: bool = False,
+) -> GoldenDataset:
+    """Load cases, optionally filtered by category and split.
+
+    Cases flagged `needs_expert_review` are excluded unless `include_unreviewed` is set:
+    their labels are not trusted until a human validates them.
+    """
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
 
     cases = [
         GoldenCase(
-            id=case["id"],
-            category=case["category"],
-            subcategory=case.get("subcategory", ""),
-            input=case.get("input", {}),
-            expected=case.get("expected", {}),
+            id=c["id"],
+            category=c["category"],
+            subcategory=c.get("subcategory", ""),
+            input=c.get("input", {}),
+            expected=c.get("expected", {}),
+            split=c.get("split", "test"),
+            language=c.get("language", "en"),
+            tags=c.get("tags", []),
+            label_source=c.get("label_source", "unspecified"),
+            needs_expert_review=bool(c.get("needs_expert_review", False)),
         )
-        for case in raw["cases"]
+        for c in raw["cases"]
     ]
-
     if categories:
-        cases = [case for case in cases if case.category in categories]
+        cases = [c for c in cases if c.category in categories]
+    if split and split != "all":
+        cases = [c for c in cases if c.split == split]
+    excluded = [] if include_unreviewed else [c.id for c in cases if c.needs_expert_review]
+    cases = [c for c in cases if c.id not in excluded]
 
-    logger.info("Loaded %d golden case(s) from %s", len(cases), path)
-    return cases
+    logger.info("Loaded %d case(s) from %s (%d excluded pending expert review)", len(cases), path, len(excluded))
+    return GoldenDataset(cases=cases, version=str(raw.get("version", "1")), excluded_for_review=excluded)
+
+
+def load_golden_dataset(path: Path | str, categories: list[str] | None = None) -> list[GoldenCase]:
+    """Backward-compatible helper: all reviewed cases, all splits."""
+    return load_dataset(path, categories=categories).cases

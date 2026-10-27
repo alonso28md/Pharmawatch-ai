@@ -1,4 +1,4 @@
-"""Markdown + JSON report generation for an evaluation run."""
+"""JSON (and optional Markdown text) rendering for an evaluation run."""
 
 import json
 import logging
@@ -6,55 +6,50 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from src.evaluation.harness import EvaluationRunResult
-from src.evaluation.metrics import METRIC_THRESHOLDS, meets_threshold
+from src.evaluation.metrics import load_thresholds, meets_threshold
 
 logger = logging.getLogger(__name__)
 
-METRIC_LABELS = {
-    "retrieval_accuracy": "Retrieval Accuracy",
-    "answer_faithfulness": "Answer Faithfulness",
-    "hallucination_rate": "Hallucination Rate",
-    "classification_accuracy": "Classification Accuracy",
-    "reportability_accuracy": "Reportability Accuracy",
-    "escalation_appropriateness": "Escalation Appropriateness",
-    "latency_p50_ms": "Latency p50",
-    "latency_p95_ms": "Latency p95",
-    "source_citation_rate": "Source Citation Rate",
-}
 
-
-def _format_value(metric_name: str, value: float) -> str:
-    if metric_name.endswith("_ms"):
-        return f"{value:.0f} ms"
-    return f"{value * 100:.1f}%"
-
-
-def _format_threshold(metric_name: str) -> str:
-    operator, threshold = METRIC_THRESHOLDS[metric_name]
-    if metric_name.endswith("_ms"):
-        return f"{operator} {threshold:.0f} ms"
-    return f"{operator} {threshold * 100:.0f}%"
+def _compact_result(r: dict) -> dict:
+    keep = ("case_id", "repetition", "split", "language", "subcategory", "tags", "passed",
+            "failure_reason", "latency_ms", "scores", "expected", "error")
+    out = {k: r[k] for k in keep if k in r}
+    if "answer" in r:
+        out.update(question=r["question"], answer=r["answer"], cited_labels=r["cited_labels"],
+                   sources=r["sources"], judge=r["judge"], numeric=r["numeric"])
+    if "final_state" in r:
+        out.update(description=r["description"], final_state=r["final_state"])
+    return out
 
 
 def to_json_dict(result: EvaluationRunResult, timestamp: str, dataset_label: str) -> dict:
-    """Build the JSON payload (consumed by CI's threshold check)."""
+    """Full machine-readable payload (consumed by CI's threshold check)."""
+    thresholds = load_thresholds()
     return {
         "timestamp": timestamp,
         "model": result.model,
         "dataset": dataset_label,
+        "metadata": result.metadata,
         "summary": {
             "total_cases": result.total_cases,
             "passed": result.passed,
             "failed": result.failed,
-            "pass_rate": round(result.passed / result.total_cases, 4) if result.total_cases else 0.0,
+            "pass_rate": round(result.passed / result.total_cases, 4) if result.total_cases else None,
+            "flaky_cases": result.flaky_cases,
         },
         "metrics": result.metrics,
+        "metric_summary": {
+            name: {**stats, "threshold": thresholds.get(name), "meets_threshold": meets_threshold(name, stats["mean"])}
+            for name, stats in result.metric_summary.items()
+        },
         "failed_cases": result.failed_cases,
+        "results": [_compact_result(r) for r in result.rag_results + result.classification_results],
     }
 
 
 def render_markdown(result: EvaluationRunResult, timestamp: str, dataset_label: str) -> str:
-    """Render the full Markdown evaluation report."""
+    """Human-readable summary (printed to the console; not written to the repository)."""
     lines = [
         "# PharmaWatch AI — Evaluation Report",
         "",
@@ -64,50 +59,26 @@ def render_markdown(result: EvaluationRunResult, timestamp: str, dataset_label: 
         "",
         "## Summary",
         "",
-        f"- Total cases: {result.total_cases}",
-        f"- Passed: {result.passed}",
-        f"- Failed: {result.failed}",
-        f"- Pass rate: {result.passed / result.total_cases * 100:.1f}%" if result.total_cases else "- Pass rate: N/A",
+        f"- Passed (every repetition): {result.passed}/{result.total_cases}",
         "",
         "## Metrics",
         "",
-        "| Metric | Score | Threshold | Status |",
-        "|---|---|---|---|",
+        "| Metric | Mean | Min | Max | Threshold | Status |",
+        "|---|---|---|---|---|---|",
     ]
-
-    for metric_name, value in result.metrics.items():
-        label = METRIC_LABELS.get(metric_name, metric_name)
-        status = "PASS" if meets_threshold(metric_name, value) else "FAIL"
-        lines.append(
-            f"| {label} | {_format_value(metric_name, value)} | "
-            f"{_format_threshold(metric_name)} | {status} |"
-        )
+    thresholds = load_thresholds()
+    for name, value in result.metrics.items():
+        stats = result.metric_summary.get(name, {"min": value, "max": value})
+        rule = thresholds.get(name)
+        ok = meets_threshold(name, value)
+        status = "N/A" if ok is None else ("PASS" if ok else "FAIL")
+        fmt = (lambda v: "N/A" if v is None else f"{v:.0f} ms") if name.endswith("_ms") else (
+            lambda v: "N/A" if v is None else f"{v * 100:.1f}%")
+        threshold = f"{rule['op']} {rule['value']}" if rule else "-"
+        lines.append(f"| {name} | {fmt(value)} | {fmt(stats['min'])} | {fmt(stats['max'])} | {threshold} | {status} |")
 
     lines += ["", "## Failed Cases", ""]
-    if result.failed_cases:
-        for failed in result.failed_cases:
-            lines.append(f"- **{failed['case_id']}**: {failed['reason']}")
-    else:
-        lines.append("None - all cases passed.")
-
-    lines += ["", "## Notes", ""]
-    lines.append(
-        "- `hallucination_rate` and `answer_faithfulness` are computed with an "
-        "embedding-based claim-support heuristic (sentence-transformers cosine "
-        "similarity against retrieved chunks, calibrated threshold - see "
-        "`CLAIM_SUPPORT_SIMILARITY_THRESHOLD` in `src/evaluation/metrics.py`), "
-        "not a second LLM judge."
-    )
-    lines.append(
-        "- `escalation_appropriateness` is measured only over the dataset's "
-        "`ambiguous` classification subcategory (cases with missing critical "
-        "information, which must be escalated rather than guessed)."
-    )
-    lines.append(
-        "- Any metric below its threshold is reported as-is below, not hidden or "
-        "adjusted - see the project README for the honesty-over-polish rationale."
-    )
-
+    lines += [f"- **{f['case_id']}**: {f['reason']}" for f in result.failed_cases] or ["None."]
     return "\n".join(lines) + "\n"
 
 
@@ -121,6 +92,6 @@ def write_json_report(result: EvaluationRunResult, artifacts_dir: Path | str, da
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"eval_{dataset_label}_{timestamp}.json"
     payload = to_json_dict(result, timestamp, dataset_label)
-    path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    path.write_text(json.dumps(payload, indent=2, default=str, ensure_ascii=False), encoding="utf-8")
     logger.info("Wrote evaluation JSON to %s", path)
     return path

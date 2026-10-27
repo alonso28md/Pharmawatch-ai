@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY data/ data/
 COPY scripts/ scripts/
+COPY config/ config/
 COPY static/ static/
 
 # Index the regulatory documents into the vector store at build time

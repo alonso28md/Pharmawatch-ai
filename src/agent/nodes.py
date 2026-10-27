@@ -180,7 +180,9 @@ ASSESSMENT_SYSTEM = (
     "outcome, or an expected side-effect clearly documented in the product information and "
     "subject to trend reporting.\n"
     "- unknown: the description does not allow a decision.\n"
-    "If a second category is also plausible, give it as alternative_category (otherwise null). "
+    "alternative_category: give a second category only if the description contains specific "
+    "facts that would satisfy that category's definition as well; do not list a category just "
+    "because it cannot be ruled out. Otherwise null. "
     "confidence is your probability (0-1) that `category` is correct. reasoning: 1-3 sentences "
     "citing the relevant MDR provision."
 )

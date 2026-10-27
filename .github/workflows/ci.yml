@@ -2,9 +2,15 @@ name: CI — Tests & Evaluation
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      run_evaluation:
+        description: "Run the paid evaluation (real model calls)"
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -21,16 +27,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run unit tests (excludes live-API tests - no key in this job)
+      - name: Run tests (live-model tests are opt-in and skipped here)
         run: pytest tests/ -v --tb=short
 
       - name: Run linter
         run: ruff check src/ tests/ scripts/
 
   evaluate:
+    # Paid: only when started manually with run_evaluation=true.
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.run_evaluation
     steps:
       - uses: actions/checkout@v4
 
@@ -46,28 +53,17 @@ jobs:
       - name: Ingest documents
         run: python scripts/ingest_documents.py
 
-      - name: Run evaluation harness
+      - name: Run evaluation harness (v2, test split, 3 repetitions)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python scripts/run_evaluation.py
+        run: python scripts/run_evaluation.py --dataset v2 --split test --repetitions 3
 
-      - name: Check evaluation thresholds
-        run: |
-          python -c "
-          import json
-          with open('docs/evaluation_report.json') as f:
-              r = json.load(f)
-          m = r['metrics']
-          assert m['retrieval_accuracy'] >= 0.85, f'Retrieval accuracy {m[\"retrieval_accuracy\"]} < 0.85'
-          assert m['hallucination_rate'] <= 0.10, f'Hallucination rate {m[\"hallucination_rate\"]} > 0.10'
-          assert m['classification_accuracy'] >= 0.80, f'Classification accuracy {m[\"classification_accuracy\"]} < 0.80'
-          print('All evaluation thresholds passed')
-          "
+      - name: Check every gating threshold in config/eval_thresholds.json
+        run: python scripts/check_eval_thresholds.py
 
       - name: Upload evaluation report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: evaluation-report
-          path: |
-            docs/evaluation_report.md
-            docs/evaluation_report.json
+          path: artifacts/evaluations/*.json
