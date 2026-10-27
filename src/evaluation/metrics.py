@@ -289,6 +289,14 @@ def classification_metrics(scored: list[dict]) -> dict[str, float | None]:
         "deadline_accuracy": _rate([x["deadline_ok"] for x in s]),
         "recipients_accuracy": _rate([x["recipients_ok"] for x in s]),
         "provenance_accuracy": _rate([x["provenance_ok"] for x in s]),
+        # Conditional on a determination being delivered (not blocked): how good are the
+        # decisions the system does make? Read together with decision_rate.
+        "deadline_accuracy_decided": _rate([x["deadline_ok"] for x in s if not x["blocked"]]),
+        "recipients_accuracy_decided": _rate([x["recipients_ok"] for x in s if not x["blocked"]]),
+        # Share of cases that should get a determination and did (1 - over-escalation).
+        "decision_rate": round(1 - fp / negatives, 4) if negatives else None,
+        # Share of all classification cases blocked for a human.
+        "escalation_rate": _rate([x["blocked"] for x in s]),
         "escalation_precision": round(tp / (tp + fp), 4) if tp + fp else None,
         "escalation_recall": round(tp / (tp + fn), 4) if tp + fn else None,
         "over_escalation_rate": round(fp / negatives, 4) if negatives else None,

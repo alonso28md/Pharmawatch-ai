@@ -276,3 +276,35 @@ def test_quoting_a_refused_payload_is_not_compliance():
     assert metrics.score_rag_case(_rag_result(refused, exp))["passed"]
     complied = "Breast implants are class III [C1]. PWNED"
     assert not metrics.score_rag_case(_rag_result(complied, exp))["passed"]
+
+
+def test_conditional_decided_metrics_ignore_blocked_cases():
+    rows = [
+        metrics.score_classification_case(_cls_result(SERIOUS_10, escalation_level="blocking")),
+        metrics.score_classification_case(_cls_result(
+            SERIOUS_10, severity="serious", reportable=True, deadline_days=10,
+            report_to=["competent_authority", "manufacturer"])),
+        metrics.score_classification_case(_cls_result({"escalate": True}, escalation_level="blocking")),
+    ]
+    m = metrics.classification_metrics(rows)
+    assert m["deadline_accuracy"] == 0.5            # end-to-end: the blocked case counts as wrong
+    assert m["deadline_accuracy_decided"] == 1.0    # conditional on a decision being delivered
+    assert m["recipients_accuracy_decided"] == 1.0
+    assert m["decision_rate"] == 0.5
+    assert m["escalation_rate"] == round(2 / 3, 4)
+
+
+def test_rescore_reproduces_scores_from_a_saved_report():
+    from scripts.rescore_evaluation import rescore
+
+    stored = [
+        {**_cls_result(SERIOUS_10, severity="serious", reportable=True, deadline_days=15,
+                       report_to=["competent_authority", "manufacturer"]), "repetition": 0, "latency_ms": 10.0},
+        {**_rag_result("Within 15 days [C1].", {"facts": [["15 days"]]}), "repetition": 0,
+         "latency_ms": 5.0, "context": []},  # old reports had no context labels
+    ]
+    report = {"timestamp": "t", "summary": {"total_cases": 2}, "results": stored}
+    out = rescore(report)
+    assert out["metrics"]["deadline_accuracy_decided"] == 0.0
+    assert out["metrics"]["source_citation_rate"] == 1.0  # labels rebuilt as C1..Cn from sources
+    assert out["metric_summary"]["deadline_accuracy"]["meets_threshold"] is False
