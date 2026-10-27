@@ -1,0 +1,271 @@
+{
+  "source": "Regulation (EU) 2017/745, Annex VIII (Classification Rules) and Article 2(65)/(66)/(68); see data/regulations/mdr_annex_classification_rules.txt and mdr_vigilance_articles.txt for full text",
+  "classification_overrides": [
+    {
+      "keywords": ["breast implant"],
+      "class": "III",
+      "rule": "Rule 8 exception (breast implants)",
+      "reasoning": "Rule 8: implantable devices are class IIb by default, but breast implants are explicitly listed as a class III exception."
+    },
+    {
+      "keywords": ["surgical mesh"],
+      "class": "III",
+      "rule": "Rule 8 exception (surgical meshes)",
+      "reasoning": "Rule 8: surgical meshes are explicitly listed as a class III exception to the default class IIb for implantable devices."
+    },
+    {
+      "keywords": ["joint replacement", "hip replacement", "knee replacement"],
+      "class": "III",
+      "rule": "Rule 8 exception (total/partial joint replacements)",
+      "reasoning": "Rule 8: total or partial joint replacements are class III, with the exception of ancillary components such as screws, wedges, plates and instruments."
+    },
+    {
+      "keywords": ["spinal disc replacement", "spinal disc implant"],
+      "class": "III",
+      "rule": "Rule 8 exception (spinal disc replacement implants)",
+      "reasoning": "Rule 8: spinal disc replacement implants and implantable devices in contact with the spinal column are class III, except ancillary components."
+    },
+    {
+      "keywords": ["active implantable", "pacemaker", "implantable defibrillator"],
+      "class": "III",
+      "rule": "Rule 8 exception (active implantable devices)",
+      "reasoning": "Rule 8: active implantable devices or their accessories are class III."
+    },
+    {
+      "keywords": ["automated external defibrillator", "closed loop", "closed-loop"],
+      "class": "III",
+      "rule": "Rule 22",
+      "reasoning": "Rule 22: active therapeutic devices with an integrated diagnostic function that significantly determines patient management (e.g. closed-loop systems, AEDs) are class III."
+    }
+  ],
+  "classification_rules": [
+    {
+      "rule": "Rule 1",
+      "group": "non-invasive",
+      "class": "I",
+      "keywords": ["non-invasive", "external", "surface device"],
+      "criteria": "All non-invasive devices, unless a more specific rule applies.",
+      "example_devices": ["stethoscope", "examination gloves", "wheelchair"]
+    },
+    {
+      "rule": "Rule 2",
+      "group": "non-invasive",
+      "class": "IIa",
+      "keywords": ["channelling", "storing blood", "body liquids", "infusion set", "blood bag"],
+      "criteria": "Non-invasive devices for channelling/storing blood, body liquids, cells or tissues for eventual infusion/administration. Blood bags are class IIb.",
+      "example_devices": ["infusion set tubing", "blood bag (class IIb)"]
+    },
+    {
+      "rule": "Rule 3",
+      "group": "non-invasive",
+      "class": "IIb",
+      "keywords": ["modifying biological composition", "blood filtration", "centrifugation"],
+      "criteria": "Non-invasive devices modifying biological/chemical composition of blood or body liquids for implantation/administration; filtration/centrifugation/gas-exchange only is class IIa; in-vitro contact with human embryos is class III.",
+      "example_devices": ["blood warmer with modification function"]
+    },
+    {
+      "rule": "Rule 4",
+      "group": "non-invasive",
+      "class": "IIa",
+      "keywords": ["injured skin", "mucous membrane", "wound dressing", "chronic wound"],
+      "criteria": "Non-invasive devices contacting injured skin/mucous membrane: class I as mechanical barrier/compression/absorption; class IIb for secondary-intent chronic wound healing; class IIa for micro-environment management or other cases.",
+      "example_devices": ["adhesive plaster (class I)", "chronic wound dressing (class IIb)"]
+    },
+    {
+      "rule": "Rule 5",
+      "group": "invasive",
+      "class": "IIa",
+      "keywords": ["urinary catheter", "body orifice", "endotracheal tube"],
+      "criteria": "Invasive devices w.r.t. body orifices (non-surgical): class I transient, class IIa short-term, class IIb long-term (with oral/ear/nasal exceptions).",
+      "example_devices": ["urinary catheter"]
+    },
+    {
+      "rule": "Rule 6",
+      "group": "invasive",
+      "class": "IIa",
+      "keywords": ["surgical instrument", "scalpel", "transient surgically invasive"],
+      "criteria": "Surgically invasive, transient use: class IIa default; class I if reusable surgical instrument; class III if heart/CNS/central circulatory contact.",
+      "example_devices": ["scalpel (class I, reusable)"]
+    },
+    {
+      "rule": "Rule 7",
+      "group": "invasive",
+      "class": "IIa",
+      "keywords": ["short-term surgically invasive"],
+      "criteria": "Surgically invasive, short-term use: class IIa default; class III for heart/CNS/circulatory contact; class IIb for ionising radiation, absorbable, or medicine administration.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 8",
+      "group": "invasive",
+      "class": "IIb",
+      "keywords": ["implant", "implantable", "long-term surgically invasive", "joint replacement", "breast implant", "spinal disc"],
+      "criteria": "Implantable / long-term surgically invasive: class IIb default; class III for heart/CNS/circulatory contact, breast implants, surgical meshes, joint replacements, spinal disc/spinal column implants, active implantables.",
+      "example_devices": ["breast implant (class III)", "hip joint replacement (class III)"]
+    },
+    {
+      "rule": "Rule 9",
+      "group": "active",
+      "class": "IIa",
+      "keywords": ["electrosurgical unit", "energy administration", "active therapeutic device", "diathermy"],
+      "criteria": "Active therapeutic devices administering/exchanging energy: class IIa default, class IIb if potentially hazardous energy exchange; class III if controlling active implantables.",
+      "example_devices": ["electrosurgical unit (class IIb)"]
+    },
+    {
+      "rule": "Rule 10",
+      "group": "active",
+      "class": "IIa",
+      "keywords": ["diagnostic monitor", "patient monitor", "imaging", "vital physiological parameters"],
+      "criteria": "Active diagnostic/monitoring devices: class IIa default; class IIb for vital-parameter monitoring where variation could cause immediate danger, or diagnosis in immediate-danger situations, or diagnostic/therapeutic radiology.",
+      "example_devices": ["ICU cardiac performance monitor (class IIb)"]
+    },
+    {
+      "rule": "Rule 11",
+      "group": "active",
+      "class": "IIa",
+      "keywords": ["software", "clinical decision support", "diagnostic software", "SaMD"],
+      "criteria": "Diagnostic/therapeutic decision-support software: class IIa default; class IIb if decision error could cause serious deterioration/surgery; class III if decision error could cause death/irreversible deterioration.",
+      "example_devices": ["oncology treatment planning software (class IIb/III)"]
+    },
+    {
+      "rule": "Rule 12",
+      "group": "active",
+      "class": "IIa",
+      "keywords": ["infusion pump", "contrast injector", "drug delivery device"],
+      "criteria": "Active devices administering/removing medicinal products, body liquids or substances: class IIa default, class IIb if potentially hazardous mode of administration.",
+      "example_devices": ["contrast media injector (class IIb)", "infusion pump (class IIb)"]
+    },
+    {
+      "rule": "Rule 13",
+      "group": "active",
+      "class": "I",
+      "keywords": ["other active device"],
+      "criteria": "All other active devices not covered by Rules 9-12.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 14",
+      "group": "special",
+      "class": "III",
+      "keywords": ["integrated medicinal substance", "drug-device combination"],
+      "criteria": "Devices incorporating an ancillary medicinal substance.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 15",
+      "group": "special",
+      "class": "IIb",
+      "keywords": ["contraception", "IUD", "STD prevention"],
+      "criteria": "Contraception / STD-prevention devices: class IIb default, class III if implantable or long-term invasive.",
+      "example_devices": ["intrauterine device (IUD)"]
+    },
+    {
+      "rule": "Rule 16",
+      "group": "special",
+      "class": "IIa",
+      "keywords": ["contact lens care", "disinfecting solution", "sterilising device"],
+      "criteria": "Contact lens disinfecting/cleaning/hydrating: class IIb; device sterilising/disinfecting solutions: class IIa (class IIb if end-point disinfection of invasive devices).",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 17",
+      "group": "special",
+      "class": "IIa",
+      "keywords": ["x-ray film", "diagnostic image recording"],
+      "criteria": "Devices recording diagnostic X-ray images.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 18",
+      "group": "special",
+      "class": "III",
+      "keywords": ["human tissue", "animal tissue", "cell-derived device", "biologic derivative"],
+      "criteria": "Devices from non-viable human/animal tissues or cells, unless animal-derived and intact-skin-contact only.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 19",
+      "group": "special",
+      "class": "IIa",
+      "keywords": ["nanomaterial"],
+      "criteria": "Devices incorporating nanomaterial: class III high/medium internal exposure, IIb low, IIa negligible.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 20",
+      "group": "special",
+      "class": "IIa",
+      "keywords": ["inhaler", "nebulizer", "inhalation device"],
+      "criteria": "Inhaled medicinal product administration devices: class IIa default, class IIb if mode of action critical or life-threatening condition.",
+      "example_devices": ["inhaler"]
+    },
+    {
+      "rule": "Rule 21",
+      "group": "special",
+      "class": "IIb",
+      "keywords": ["absorbed substance", "topical substance device"],
+      "criteria": "Substance-based devices absorbed by or dispersed in the body: class III if systemically absorbed, class IIa if skin/oral-pharynx local action, class IIb otherwise.",
+      "example_devices": []
+    },
+    {
+      "rule": "Rule 22",
+      "group": "special",
+      "class": "III",
+      "keywords": ["closed loop", "automated external defibrillator", "AED", "integrated diagnostic therapeutic"],
+      "criteria": "Active therapeutic devices with integrated diagnostic function significantly determining patient management (e.g. closed-loop systems, AEDs).",
+      "example_devices": ["automated external defibrillator", "closed-loop insulin pump"]
+    }
+  ],
+  "severity_criteria": {
+    "legal_basis": "MDR Article 2(65) 'serious incident' definition",
+    "criteria": [
+      {
+        "id": "death",
+        "description": "The incident directly or indirectly led, might have led, or might lead to the death of a patient, user or other person."
+      },
+      {
+        "id": "serious_deterioration",
+        "description": "The incident directly or indirectly led, might have led, or might lead to the temporary or permanent serious deterioration of a patient's, user's, or other person's state of health, including hospitalization, prolonged hospitalization, permanent impairment, or need for medical/surgical intervention to prevent permanent damage."
+      },
+      {
+        "id": "public_health_threat",
+        "description": "The incident constitutes a serious public health threat: an event that could result in imminent risk of death, serious deterioration in health, or serious illness, requiring prompt remedial action."
+      }
+    ],
+    "non_serious_indicators": [
+      "no clinically significant harm occurred",
+      "expected and documented side effect already quantified in technical documentation",
+      "near-miss with no patient contact or impact",
+      "device malfunction detected and resolved before use with no patient exposure"
+    ]
+  },
+  "reporting_deadlines": {
+    "legal_basis": "MDR Article 87(3)-(5)",
+    "rules": [
+      {
+        "trigger": "serious_public_health_threat",
+        "deadline_days": 2,
+        "report_to": ["competent_authority"],
+        "description": "Immediately, no later than 2 days after the manufacturer becomes aware of the threat."
+      },
+      {
+        "trigger": "death_or_unanticipated_serious_deterioration",
+        "deadline_days": 10,
+        "report_to": ["competent_authority", "manufacturer"],
+        "description": "Immediately after causal relationship is established or suspected, no later than 10 days after awareness."
+      },
+      {
+        "trigger": "other_serious_incident",
+        "deadline_days": 15,
+        "report_to": ["competent_authority", "manufacturer"],
+        "description": "Immediately after causal relationship is established or reasonably possible, no later than 15 days after awareness."
+      },
+      {
+        "trigger": "non_serious_trend",
+        "deadline_days": 30,
+        "report_to": ["competent_authority"],
+        "description": "Periodic trend reporting per Article 88 for statistically significant increases in non-serious incident frequency/severity; observation period defined in the manufacturer's PMS plan."
+      }
+    ]
+  }
+}
