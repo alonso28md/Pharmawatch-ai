@@ -1,0 +1,1081 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PharmaWatch AI",
+    "description": "AI-powered pharmacovigilance assistant for medical device adverse event classification and regulatory reporting. Combines a RAG pipeline over real MDR 2017/745 and AEMPS regulatory text with a LangGraph incident-classification agent, backed by a reproducible evaluation harness.",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "description": "Report service status, vector store connectivity, and configured model.\n\nA plain `def`: FastAPI runs it in the threadpool, so the (blocking) vector-store and\nDB checks never stall the event loop.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ask": {
+      "post": {
+        "tags": [
+          "rag"
+        ],
+        "summary": "Ask",
+        "description": "Answer a regulatory question with citations from the indexed documents.",
+        "operationId": "ask_ask_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/report": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Report",
+        "description": "Classify an adverse event description and determine its reporting requirements.\n\nEvery classified incident is persisted (without its free-text description) and can\nbe fetched again with GET /reports/{incident_id}.",
+        "operationId": "report_report_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/{incident_id}": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Get Report",
+        "description": "Return the stored classification result for `incident_id`.",
+        "operationId": "get_report_reports__incident_id__get",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^INC-\\d{4}-[0-9A-F]{6,8}$",
+              "title": "Incident Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluate": {
+      "post": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Evaluate",
+        "description": "Run the golden-dataset evaluation harness (real model calls; takes minutes).\n\nOnly dataset names from the EVALUATION_DATASETS whitelist are accepted. The\nerror for an unknown name is the same whether or not a file by that name exists.\nResults are written as JSON to ARTIFACTS_DIR - never to docs/ or the query DB.",
+        "operationId": "evaluate_evaluate_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Operational Metrics",
+        "description": "Aggregate business-request metrics (/ask, /report, /evaluate) from the SQLite query log.",
+        "operationId": "operational_metrics_metrics_get",
+        "parameters": [
+          {
+            "name": "include_demo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include synthetic rows written by scripts/seed_db.py",
+              "default": false,
+              "title": "Include Demo"
+            },
+            "description": "Include synthetic rows written by scripts/seed_db.py"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalMetricsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Config",
+        "description": "Expose non-secret capabilities/limits so a future client can configure itself.",
+        "operationId": "config_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 10,
+            "title": "Question"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "es"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "description": "POST /ask request body. `language` forces the answer language; omitted = auto-detect."
+      },
+      "AskResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "retrieval_score": {
+            "type": "number",
+            "title": "Retrieval Score"
+          },
+          "processing_time_ms": {
+            "type": "integer",
+            "title": "Processing Time Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "sources",
+          "retrieval_score",
+          "processing_time_ms"
+        ],
+        "title": "AskResponse",
+        "description": "POST /ask response body."
+      },
+      "ConfigResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "rate_limit_per_minute": {
+            "type": "integer",
+            "title": "Rate Limit Per Minute"
+          },
+          "retrieval_top_k": {
+            "type": "integer",
+            "title": "Retrieval Top K"
+          },
+          "supported_languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supported Languages"
+          },
+          "endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Endpoints"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "rate_limit_per_minute",
+          "retrieval_top_k",
+          "supported_languages",
+          "endpoints"
+        ],
+        "title": "ConfigResponse",
+        "description": "GET /config response body: capabilities/limits a future client can rely on."
+      },
+      "EvaluateRequest": {
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{1,40}$",
+            "title": "Dataset",
+            "default": "default"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "rag",
+                    "classification"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categories"
+          }
+        },
+        "type": "object",
+        "title": "EvaluateRequest",
+        "description": "POST /evaluate request body. `dataset` is a whitelisted name, never a path."
+      },
+      "EvaluateResponse": {
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/EvaluationSummary"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "failed_cases": {
+            "items": {
+              "$ref": "#/components/schemas/FailedCase"
+            },
+            "type": "array",
+            "title": "Failed Cases"
+          },
+          "report_file": {
+            "type": "string",
+            "title": "Report File"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "metrics",
+          "failed_cases",
+          "report_file",
+          "timestamp"
+        ],
+        "title": "EvaluateResponse",
+        "description": "POST /evaluate response body. `report_file` lives in ARTIFACTS_DIR/evaluations/."
+      },
+      "EvaluationSummary": {
+        "properties": {
+          "total_cases": {
+            "type": "integer",
+            "title": "Total Cases"
+          },
+          "passed": {
+            "type": "integer",
+            "title": "Passed"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "pass_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pass Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_cases",
+          "passed",
+          "failed",
+          "pass_rate"
+        ],
+        "title": "EvaluationSummary",
+        "description": "Summary block of an /evaluate response."
+      },
+      "FailedCase": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "title": "FailedCase",
+        "description": "A single failed case in an /evaluate response."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "vectorstore": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "unavailable"
+            ],
+            "title": "Vectorstore"
+          },
+          "vectorstore_documents": {
+            "type": "integer",
+            "title": "Vectorstore Documents"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "unavailable"
+            ],
+            "title": "Database"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "uptime_seconds": {
+            "type": "number",
+            "title": "Uptime Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "vectorstore",
+          "vectorstore_documents",
+          "database",
+          "model",
+          "uptime_seconds"
+        ],
+        "title": "HealthResponse",
+        "description": "GET /health response body."
+      },
+      "OperationalMetricsResponse": {
+        "properties": {
+          "total_queries": {
+            "type": "integer",
+            "title": "Total Queries"
+          },
+          "queries_last_24h": {
+            "type": "integer",
+            "title": "Queries Last 24H"
+          },
+          "include_demo": {
+            "type": "boolean",
+            "title": "Include Demo"
+          },
+          "avg_latency_ms": {
+            "type": "number",
+            "title": "Avg Latency Ms"
+          },
+          "p50_latency_ms": {
+            "type": "number",
+            "title": "P50 Latency Ms"
+          },
+          "p95_latency_ms": {
+            "type": "number",
+            "title": "P95 Latency Ms"
+          },
+          "latency_samples": {
+            "type": "integer",
+            "title": "Latency Samples"
+          },
+          "classification_distribution": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Classification Distribution"
+          },
+          "escalation_rate": {
+            "type": "number",
+            "title": "Escalation Rate"
+          },
+          "blocking_escalation_rate": {
+            "type": "number",
+            "title": "Blocking Escalation Rate"
+          },
+          "top_device_classes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Top Device Classes"
+          },
+          "avg_confidence": {
+            "type": "number",
+            "title": "Avg Confidence"
+          },
+          "error_rate": {
+            "type": "number",
+            "title": "Error Rate"
+          },
+          "client_error_rate": {
+            "type": "number",
+            "title": "Client Error Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_queries",
+          "queries_last_24h",
+          "include_demo",
+          "avg_latency_ms",
+          "p50_latency_ms",
+          "p95_latency_ms",
+          "latency_samples",
+          "classification_distribution",
+          "escalation_rate",
+          "blocking_escalation_rate",
+          "top_device_classes",
+          "avg_confidence",
+          "error_rate",
+          "client_error_rate"
+        ],
+        "title": "OperationalMetricsResponse",
+        "description": "GET /metrics response body."
+      },
+      "ReportRequest": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 20,
+            "title": "Description",
+            "description": "Free-text description of the adverse event"
+          },
+          "device_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Name"
+          },
+          "device_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "I",
+                  "IIa",
+                  "IIb",
+                  "III"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Class"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "ReportRequest",
+        "description": "POST /report request body."
+      },
+      "ReportResponse": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "title": "Incident Id"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "serious",
+                  "non-serious"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "severity_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Confidence"
+          },
+          "severity_reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Reasoning"
+          },
+          "incident_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Category"
+          },
+          "reportable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reportable"
+          },
+          "report_to": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report To"
+          },
+          "deadline_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Days"
+          },
+          "deadline_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Rule"
+          },
+          "device_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Class"
+          },
+          "device_class_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "caller",
+                  "extracted",
+                  "rule"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Class Source"
+          },
+          "classification_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification Rule"
+          },
+          "escalated_to_human": {
+            "type": "boolean",
+            "title": "Escalated To Human"
+          },
+          "escalation_level": {
+            "type": "string",
+            "enum": [
+              "none",
+              "advisory",
+              "blocking"
+            ],
+            "title": "Escalation Level"
+          },
+          "escalation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalation Reason"
+          },
+          "rag_sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Rag Sources"
+          },
+          "draft_notification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Notification"
+          },
+          "processing_time_ms": {
+            "type": "integer",
+            "title": "Processing Time Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "incident_id",
+          "severity",
+          "severity_confidence",
+          "severity_reasoning",
+          "incident_category",
+          "reportable",
+          "report_to",
+          "deadline_days",
+          "deadline_rule",
+          "device_class",
+          "device_class_source",
+          "classification_rule",
+          "escalated_to_human",
+          "escalation_level",
+          "rag_sources",
+          "processing_time_ms"
+        ],
+        "title": "ReportResponse",
+        "description": "POST /report response body."
+      },
+      "Source": {
+        "properties": {
+          "document": {
+            "type": "string",
+            "title": "Document"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "relevance_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance Score"
+          },
+          "chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document",
+          "section",
+          "text"
+        ],
+        "title": "Source",
+        "description": "A single cited regulatory source chunk."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

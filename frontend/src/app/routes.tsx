@@ -1,0 +1,18 @@
+import type { RouteObject } from "react-router-dom";
+import { AppShell } from "@/components/layout/AppShell";
+import { makePlaceholder } from "@/pages/placeholders";
+
+export const routes: RouteObject[] = [
+  {
+    element: <AppShell />,
+    children: [
+      { index: true, Component: makePlaceholder("dashboard") },
+      { path: "triage", Component: makePlaceholder("triage") },
+      { path: "ask", Component: makePlaceholder("ask") },
+      { path: "review", Component: makePlaceholder("review") },
+      { path: "evaluation", Component: makePlaceholder("evaluation") },
+      { path: "operations", Component: makePlaceholder("operations") },
+      { path: "settings", Component: makePlaceholder("settings") },
+    ],
+  },
+];

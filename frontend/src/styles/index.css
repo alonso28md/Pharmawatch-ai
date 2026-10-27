@@ -1,0 +1,179 @@
+@import "@fontsource-variable/public-sans";
+@import "@fontsource-variable/jetbrains-mono";
+@import "tailwindcss";
+
+/* Tokens from DESIGN.md, exposed as CSS variables by role (light default, dark override). */
+:root {
+  color-scheme: light;
+  --pw-canvas: #f6f5f2;
+  --pw-surface: #ffffff;
+  --pw-surface-raised: #fbfaf8;
+  --pw-surface-sunken: #efede8;
+  --pw-border: #dfdcd5;
+  --pw-border-strong: #c9c5bc;
+  --pw-text: #1b1f23;
+  --pw-text-muted: #565c63;
+  --pw-text-subtle: #6b7178;
+  --pw-accent: #0e5c70;
+  --pw-accent-hover: #0a4757;
+  --pw-accent-contrast: #ffffff;
+  --pw-focus: #0e5c70;
+  --pw-ok-fg: #22603a;
+  --pw-ok-bg: #e5f1e8;
+  --pw-ok-border: #b8d7c1;
+  --pw-serious-fg: #7a4f00;
+  --pw-serious-bg: #fbf0d8;
+  --pw-serious-border: #e9cc8b;
+  --pw-critical-fg: #9e2227;
+  --pw-critical-bg: #fbe7e6;
+  --pw-critical-border: #edb9b6;
+  --pw-escalation-fg: #39437d;
+  --pw-escalation-bg: #e8eaf5;
+  --pw-escalation-border: #bcc1e2;
+  --pw-info-fg: #2c4f66;
+  --pw-info-bg: #e6eef3;
+  --pw-info-border: #bacfdc;
+
+  --pw-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --pw-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --pw-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --pw-canvas: #111315;
+  --pw-surface: #181b1e;
+  --pw-surface-raised: #1e2125;
+  --pw-surface-sunken: #0c0e10;
+  --pw-border: #2c3136;
+  --pw-border-strong: #3b4148;
+  --pw-text: #e9e7e2;
+  --pw-text-muted: #a6aaaf;
+  --pw-text-subtle: #8e9398;
+  --pw-accent: #5db4c8;
+  --pw-accent-hover: #7cc4d5;
+  --pw-accent-contrast: #0b1416;
+  --pw-focus: #7cc4d5;
+  --pw-ok-fg: #8fd0a2;
+  --pw-ok-bg: #14261a;
+  --pw-ok-border: #2c4a35;
+  --pw-serious-fg: #e9c276;
+  --pw-serious-bg: #2a2111;
+  --pw-serious-border: #4d3c1c;
+  --pw-critical-fg: #f0a19d;
+  --pw-critical-bg: #2c1514;
+  --pw-critical-border: #552927;
+  --pw-escalation-fg: #aeb6ec;
+  --pw-escalation-bg: #1a1d33;
+  --pw-escalation-border: #353c66;
+  --pw-info-fg: #9ec3da;
+  --pw-info-bg: #14212a;
+  --pw-info-border: #2a4152;
+}
+
+@theme inline {
+  --font-sans: "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-canvas: var(--pw-canvas);
+  --color-surface: var(--pw-surface);
+  --color-surface-raised: var(--pw-surface-raised);
+  --color-surface-sunken: var(--pw-surface-sunken);
+  --color-line: var(--pw-border);
+  --color-line-strong: var(--pw-border-strong);
+  --color-ink: var(--pw-text);
+  --color-ink-muted: var(--pw-text-muted);
+  --color-ink-subtle: var(--pw-text-subtle);
+  --color-accent: var(--pw-accent);
+  --color-accent-hover: var(--pw-accent-hover);
+  --color-accent-contrast: var(--pw-accent-contrast);
+  --color-focus: var(--pw-focus);
+  --color-ok: var(--pw-ok-fg);
+  --color-ok-bg: var(--pw-ok-bg);
+  --color-ok-line: var(--pw-ok-border);
+  --color-serious: var(--pw-serious-fg);
+  --color-serious-bg: var(--pw-serious-bg);
+  --color-serious-line: var(--pw-serious-border);
+  --color-critical: var(--pw-critical-fg);
+  --color-critical-bg: var(--pw-critical-bg);
+  --color-critical-line: var(--pw-critical-border);
+  --color-escalation: var(--pw-escalation-fg);
+  --color-escalation-bg: var(--pw-escalation-bg);
+  --color-escalation-line: var(--pw-escalation-border);
+  --color-info: var(--pw-info-fg);
+  --color-info-bg: var(--pw-info-bg);
+  --color-info-line: var(--pw-info-border);
+
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-title-sm: 18px;
+  --text-title-sm--line-height: 24px;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-display: 30px;
+  --text-display--line-height: 36px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --ease-standard: var(--pw-ease-standard);
+  --ease-enter: var(--pw-ease-enter);
+  --ease-exit: var(--pw-ease-exit);
+}
+
+@layer base {
+  html {
+    background-color: var(--pw-canvas);
+    color: var(--pw-text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 22px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    min-height: 100dvh;
+    margin: 0;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--pw-focus);
+    outline-offset: 2px;
+  }
+  @media (pointer: fine) {
+    html {
+      overscroll-behavior: none;
+    }
+  }
+  button,
+  a,
+  [role="tab"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* App-level reduced motion (Settings) mirrors the OS preference. */
+:root[data-reduced-motion="true"] *,
+:root[data-reduced-motion="true"] *::before,
+:root[data-reduced-motion="true"] *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+}
