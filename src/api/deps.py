@@ -32,22 +32,6 @@ def get_repository() -> Repository:
     return Repository(settings.db_path_absolute)
 
 
-def log_query_record(record: dict) -> None:
-    """Adapter from LoggingMiddleware's raw record shape to Repository.log_query."""
-    get_repository().log_query(
-        endpoint=record["endpoint"],
-        input_text=record.get("input_text"),
-        output_summary=record.get("output_summary"),
-        severity=record.get("severity"),
-        device_class=record.get("device_class"),
-        reportable=record.get("reportable"),
-        confidence=record.get("confidence"),
-        escalated=bool(record.get("escalated")),
-        latency_ms=record.get("latency_ms"),
-        error=record.get("error"),
-    )
-
-
 def get_classification_fn():
     """Return the incident-classification entrypoint (seam for test overrides)."""
     return run_incident_classification

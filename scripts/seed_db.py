@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Seed the local SQLite database with demo query-log data for local UI/testing.
 
-These are synthetic demo rows for exercising /metrics locally - NOT evaluation
+These are synthetic demo rows, stored with source="demo" so /metrics excludes them unless
+asked (?include_demo=true). They are NOT evaluation
 metrics. Real evaluation metrics only ever come from scripts/run_evaluation.py
 running the actual system against the golden dataset.
 """
@@ -48,6 +49,8 @@ def main(num_records: int = 40) -> None:
                 input_text=question,
                 output_summary="(demo) answer with citations",
                 latency_ms=random.uniform(2000, 9000),
+                status_code=200,
+                source="demo",
             )
         else:
             description, severity, device_class, reportable, confidence = random.choice(
@@ -64,6 +67,8 @@ def main(num_records: int = 40) -> None:
                 confidence=confidence,
                 escalated=escalated,
                 latency_ms=random.uniform(4000, 15000),
+                status_code=200,
+                source="demo",
             )
 
     logger.info("Seeded %d demo query-log rows into %s", num_records, settings.db_path_absolute)

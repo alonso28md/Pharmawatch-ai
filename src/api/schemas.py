@@ -46,6 +46,7 @@ class Source(BaseModel):
     section: str
     text: str
     relevance_score: float | None = None
+    chunk_id: str | None = None
 
 
 class ReportResponse(BaseModel):
@@ -76,7 +77,9 @@ class AskResponse(BaseModel):
 
     answer: str
     sources: list[Source]
-    confidence: float
+    # Mean similarity of the retrieved chunks to the question. It measures retrieval,
+    # not whether the answer is correct (an abstention can still score ~0.6).
+    retrieval_score: float
     processing_time_ms: int
 
 
@@ -123,13 +126,18 @@ class OperationalMetricsResponse(BaseModel):
 
     total_queries: int
     queries_last_24h: int
+    include_demo: bool
     avg_latency_ms: float
+    p50_latency_ms: float
     p95_latency_ms: float
+    latency_samples: int
     classification_distribution: dict[str, int]
     escalation_rate: float
+    blocking_escalation_rate: float
     top_device_classes: dict[str, int]
     avg_confidence: float
-    error_rate: float
+    error_rate: float  # share of requests that ended in 5xx
+    client_error_rate: float  # share that ended in 4xx (validation, auth, 413, 429)
 
 
 class ConfigResponse(BaseModel):

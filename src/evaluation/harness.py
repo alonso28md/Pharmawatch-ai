@@ -71,7 +71,7 @@ def _run_rag_case(retriever: RagRetriever, case: GoldenCase) -> dict:
             {"document": s.document, "section": s.section, "text": s.text}
             for s in answer.sources
         ],
-        "confidence": answer.confidence,
+        "retrieval_score": answer.retrieval_score,
         "latency_ms": latency_ms,
         "passed": passed,
         "failure_reason": reason,

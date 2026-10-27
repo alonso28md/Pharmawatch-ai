@@ -1,4 +1,4 @@
-"""Aggregate operational metrics computed from logged queries."""
+"""Aggregate operational metrics computed from logged business requests."""
 
 from collections import Counter
 
@@ -7,37 +7,42 @@ from src.evaluation.metrics import latency_percentiles
 
 
 def compute_operational_metrics(queries: list[QueryLog]) -> dict:
-    """Aggregate avg/p95 latency, severity distribution, escalation and error rates."""
-    total_queries = len(queries)
+    """Latency, outcome distribution, escalation and error rates over the given rows.
+
+    Error rates count HTTP status: 5xx (or a row with an error and no status) as server
+    errors, 4xx as client errors. Classification figures use successful /report rows only.
+    """
+    total = len(queries)
 
     latencies = [q.latency_ms for q in queries if q.latency_ms is not None]
     avg_latency_ms = round(sum(latencies) / len(latencies), 1) if latencies else 0.0
-    _, p95_latency_ms = latency_percentiles(latencies)
+    p50_latency_ms, p95_latency_ms = latency_percentiles(latencies)
 
-    severities = [q.severity for q in queries if q.severity]
-    classification_distribution = dict(Counter(severities))
-    escalated_count = sum(1 for q in queries if q.escalated)
-    classification_distribution["escalated"] = escalated_count
+    def is_server_error(q: QueryLog) -> bool:
+        return (q.status_code or 0) >= 500 or (q.status_code is None and bool(q.error))
 
-    device_classes = [q.device_class for q in queries if q.device_class]
-    top_device_classes = dict(Counter(device_classes))
+    server_errors = sum(1 for q in queries if is_server_error(q))
+    client_errors = sum(1 for q in queries if q.status_code is not None and 400 <= q.status_code < 500)
 
-    confidences = [q.confidence for q in queries if q.confidence is not None]
-    avg_confidence = round(sum(confidences) / len(confidences), 4) if confidences else 0.0
+    reports = [q for q in queries if q.endpoint == "/report" and (q.status_code or 200) < 400]
+    escalated = [q for q in reports if q.escalated]
+    blocking = [q for q in reports if q.escalation_level == "blocking"]
+    distribution = dict(Counter(q.severity for q in reports if q.severity))
+    distribution["escalated"] = len(escalated)
 
-    error_count = sum(1 for q in queries if q.error)
-    error_rate = round(error_count / total_queries, 4) if total_queries else 0.0
-
-    classifiable_total = len(severities) + escalated_count
-    escalation_rate = round(escalated_count / classifiable_total, 4) if classifiable_total else 0.0
+    confidences = [q.confidence for q in reports if q.confidence is not None]
 
     return {
-        "total_queries": total_queries,
+        "total_queries": total,
         "avg_latency_ms": avg_latency_ms,
+        "p50_latency_ms": p50_latency_ms,
         "p95_latency_ms": p95_latency_ms,
-        "classification_distribution": classification_distribution,
-        "escalation_rate": escalation_rate,
-        "top_device_classes": top_device_classes,
-        "avg_confidence": avg_confidence,
-        "error_rate": error_rate,
+        "latency_samples": len(latencies),
+        "classification_distribution": distribution,
+        "escalation_rate": round(len(escalated) / len(reports), 4) if reports else 0.0,
+        "blocking_escalation_rate": round(len(blocking) / len(reports), 4) if reports else 0.0,
+        "top_device_classes": dict(Counter(q.device_class for q in reports if q.device_class)),
+        "avg_confidence": round(sum(confidences) / len(confidences), 4) if confidences else 0.0,
+        "error_rate": round(server_errors / total, 4) if total else 0.0,
+        "client_error_rate": round(client_errors / total, 4) if total else 0.0,
     }

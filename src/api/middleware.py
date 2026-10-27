@@ -1,27 +1,174 @@
-"""Cross-cutting ASGI middleware: timing, security headers, and query logging."""
+"""Cross-cutting pure-ASGI middleware: body-size limit, security headers, observability.
+
+Contract with the routes (explicit, typed): ObservabilityMiddleware creates a
+`RequestLog` for every business request and exposes it at `request.state.request_log`;
+routes obtain it through the `get_request_log` dependency and fill in outcome fields;
+exception handlers set `error`. The middleware itself measures latency and records
+the final HTTP status in a try/finally, so failures are always logged.
+"""
 
 import json
 import logging
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
 
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
-QueryLogSink = Callable[[dict], None]
+# Only these endpoints are operational traffic worth logging (not /health, /docs, static...).
+BUSINESS_PATHS = ("/ask", "/report", "/evaluate")
 
 
-def _default_log_sink(record: dict) -> None:
-    """Fallback sink (used only if no DB-backed sink is injected): logs via `logging`."""
-    logger.info(
-        "query endpoint=%s status=%s latency_ms=%s",
-        record["endpoint"],
-        record["status_code"],
-        record["latency_ms"],
+@dataclass
+class RequestLog:
+    """Typed record a business request fills in; persisted by the observability sink."""
+
+    endpoint: str
+    method: str
+    status_code: int | None = None
+    latency_ms: float | None = None
+    input_text: str | None = None
+    output_summary: str | None = None
+    severity: str | None = None
+    device_class: str | None = None
+    reportable: bool | None = None
+    confidence: float | None = None
+    escalated: bool = False
+    escalation_level: str | None = None
+    error: str | None = None
+
+
+RequestLogSink = Callable[[RequestLog], None]
+
+
+def get_request_log(request: Request) -> RequestLog:
+    """FastAPI dependency: the request's RequestLog (a detached one if not instrumented)."""
+    log = getattr(request.state, "request_log", None)
+    return log if log is not None else RequestLog(endpoint=request.url.path, method=request.method)
+
+
+def _json_response_messages(status: int, payload: dict) -> list[dict]:
+    body = json.dumps(payload).encode()
+    return [
+        {
+            "type": "http.response.start",
+            "status": status,
+            "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())],
+        },
+        {"type": "http.response.body", "body": body},
+    ]
+
+
+class ObservabilityMiddleware:
+    """Times every request, adds X-Process-Time-Ms, and logs business requests (B-05/B-06/B-20)."""
+
+    def __init__(self, app, sink: RequestLogSink):
+        self.app = app
+        self._sink = sink
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        tracked = scope.get("method") == "POST" and path in BUSINESS_PATHS
+        log = RequestLog(endpoint=path, method=scope.get("method", ""))
+        if tracked:
+            scope.setdefault("state", {})["request_log"] = log
+
+        start = time.perf_counter()
+        response_started = False
+
+        async def instrumented_send(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+                log.status_code = message["status"]
+                elapsed = (time.perf_counter() - start) * 1000
+                headers = list(message.get("headers", []))
+                headers.append((b"x-process-time-ms", f"{elapsed:.1f}".encode()))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        try:
+            await self.app(scope, receive, instrumented_send)
+        except Exception:
+            logger.exception("Unhandled exception on %s", path)
+            log.error = log.error or "internal_error"
+            log.status_code = 500
+            if not response_started:
+                for message in _json_response_messages(
+                    500, {"code": "internal_error", "message": "Internal server error", "details": None}
+                ):
+                    await send(message)
+        finally:
+            log.latency_ms = round((time.perf_counter() - start) * 1000, 1)
+            if tracked:
+                if log.status_code and log.status_code >= 400 and not log.error:
+                    log.error = f"http_{log.status_code}"
+                try:
+                    self._sink(log)
+                except Exception:  # logging must never break a response
+                    logger.exception("Failed to persist request log for %s", path)
+
+
+def db_request_log_sink(repository_provider: Callable) -> RequestLogSink:
+    """Sink that writes RequestLog records to the SQLite query log."""
+
+    def sink(log: RequestLog) -> None:
+        repository_provider().log_query(**asdict(log))
+
+    return sink
+
+
+class SecurityHeadersMiddleware:
+    """Adds standard security headers to every response (including middleware-generated 500s).
+
+    The interactive API docs load Swagger UI / ReDoc from a CDN with an inline bootstrap
+    script, so those two pages get a CSP that allows exactly that; everything else keeps
+    the strict `default-src 'self'`.
+    """
+
+    STRICT_CSP = "default-src 'self'"
+    DOCS_CSP = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly; "
+        "worker-src 'self' blob:"
     )
+    DOCS_PATHS = ("/docs", "/redoc")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        csp = self.DOCS_CSP if scope.get("path") in self.DOCS_PATHS else self.STRICT_CSP
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                headers = [
+                    (k, v) for k, v in message.get("headers", [])
+                    if k.lower() not in {b"content-security-policy", b"x-frame-options"}
+                ]
+                headers += [
+                    (b"x-content-type-options", b"nosniff"),
+                    (b"x-frame-options", b"DENY"),
+                    (b"referrer-policy", b"no-referrer"),
+                    (b"content-security-policy", csp.encode()),
+                    (b"x-xss-protection", b"0"),
+                ]
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
 
 
 class BodySizeLimitMiddleware:
@@ -42,7 +189,7 @@ class BodySizeLimitMiddleware:
         headers = dict(scope.get("headers") or [])
         declared = headers.get(b"content-length")
         if declared is not None and declared.isdigit() and int(declared) > limit:
-            await self._reject(send, limit)
+            await self._reject(scope, send, limit)
             return
 
         # Buffer the (small, bounded) body up front: raising from inside `receive` would be
@@ -56,7 +203,7 @@ class BodySizeLimitMiddleware:
             body = message.get("body", b"")
             received += len(body)
             if received > limit:
-                await self._reject(send, limit)
+                await self._reject(scope, send, limit)
                 return
             chunks.append(body)
             if not message.get("more_body", False):
@@ -74,81 +221,11 @@ class BodySizeLimitMiddleware:
         await self.app(scope, replay_receive, send)
 
     @staticmethod
-    async def _reject(send, limit: int) -> None:
-        body = json.dumps(
-            {"code": "payload_too_large", "message": f"Request body exceeds {limit} bytes", "details": None}
-        ).encode()
-        await send(
-            {
-                "type": "http.response.start",
-                "status": 413,
-                "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())],
-            }
-        )
-        await send({"type": "http.response.body", "body": body})
-
-
-class TimingMiddleware(BaseHTTPMiddleware):
-    """Measures request latency and attaches it as an `X-Process-Time-Ms` header."""
-
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        start = time.perf_counter()
-        response = await call_next(request)
-        latency_ms = (time.perf_counter() - start) * 1000
-        response.headers["X-Process-Time-Ms"] = f"{latency_ms:.1f}"
-        request.state.latency_ms = latency_ms
-        return response
-
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Adds standard security response headers to every response."""
-
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        response = await call_next(request)
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
-        response.headers["X-XSS-Protection"] = "0"
-        return response
-
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-    """Logs every request/response to a pluggable sink (a real DB-backed repository by default)."""
-
-    def __init__(self, app, sink: QueryLogSink | None = None):
-        super().__init__(app)
-        self._sink = sink or _default_log_sink
-
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        try:
-            response = await call_next(request)
-        except Exception:
-            logger.exception("Unhandled exception while processing %s", request.url.path)
-            raise
-
-        latency_ms = getattr(request.state, "latency_ms", None)
-        self._sink(
-            {
-                "timestamp": time.time(),
-                "endpoint": request.url.path,
-                "method": request.method,
-                "status_code": response.status_code,
-                "latency_ms": latency_ms,
-                "input_text": getattr(request.state, "input_text", None),
-                "output_summary": getattr(request.state, "output_summary", None),
-                "severity": getattr(request.state, "severity", None),
-                "reportable": getattr(request.state, "reportable", None),
-                "escalated": getattr(request.state, "escalated", False),
-                "device_class": getattr(request.state, "device_class", None),
-                "confidence": getattr(request.state, "confidence", None),
-                "error": getattr(request.state, "error", None),
-            }
-        )
-        return response
+    async def _reject(scope, send, limit: int) -> None:
+        log = scope.get("state", {}).get("request_log")
+        if log is not None:
+            log.error = "payload_too_large"
+        for message in _json_response_messages(
+            413, {"code": "payload_too_large", "message": f"Request body exceeds {limit} bytes", "details": None}
+        ):
+            await send(message)

@@ -20,7 +20,7 @@ class StubRetriever:
             sources=[
                 Source(document="Stub Doc", section="Stub Section", text="stub text", relevance_score=0.9)
             ],
-            confidence=0.9,
+            retrieval_score=0.9,
             latency_ms=1,
         )
 

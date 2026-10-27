@@ -13,8 +13,12 @@ router = APIRouter()
 
 
 @router.get("/health", response_model=HealthResponse, tags=["health"])
-async def health() -> HealthResponse:
-    """Report service status, vector store connectivity, and configured model."""
+def health() -> HealthResponse:
+    """Report service status, vector store connectivity, and configured model.
+
+    A plain `def`: FastAPI runs it in the threadpool, so the (blocking) vector-store and
+    DB checks never stall the event loop.
+    """
     settings = get_settings()
     try:
         document_count = get_retriever().count_indexed_chunks()

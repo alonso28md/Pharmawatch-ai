@@ -86,5 +86,5 @@ def test_retriever_answer_cites_sources(tmp_path, regulatory_chunks):
 
     assert result.answer
     assert result.sources
-    assert 0.0 <= result.confidence <= 1.0
+    assert 0.0 <= result.retrieval_score <= 1.0
     assert result.latency_ms > 0

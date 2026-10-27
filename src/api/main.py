@@ -7,15 +7,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi.middleware import SlowAPIMiddleware
 
-from src.api.deps import get_repository, limiter, log_query_record
+from src.api.deps import get_repository, limiter
 from src.api.errors import install_error_handlers
 from src.api.middleware import (
     BodySizeLimitMiddleware,
-    LoggingMiddleware,
+    ObservabilityMiddleware,
     SecurityHeadersMiddleware,
-    TimingMiddleware,
+    db_request_log_sink,
 )
-from src.api.routes import ask, config, evaluate, health, metrics, report
+from src.api.routes import ask, config, evaluate, health, metrics, report, reports
 from src.config import PROJECT_ROOT, get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -37,13 +37,13 @@ app = FastAPI(
 app.state.limiter = limiter
 install_error_handlers(app)
 
-get_repository()  # initialize the DB (creates tables) at import time
-
+# Middleware runs outermost-last-added: CORS -> SecurityHeaders -> Observability ->
+# BodySizeLimit -> SlowAPI -> routes. Observability wraps everything that can fail
+# (413, 429, 5xx) so every business request is logged with its real status.
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(LoggingMiddleware, sink=log_query_record)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(TimingMiddleware)
 app.add_middleware(BodySizeLimitMiddleware, max_bytes_provider=lambda: get_settings().max_request_bytes)
+app.add_middleware(ObservabilityMiddleware, sink=db_request_log_sink(get_repository))
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -55,6 +55,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(ask.router)
 app.include_router(report.router)
+app.include_router(reports.router)
 app.include_router(evaluate.router)
 app.include_router(metrics.router)
 app.include_router(config.router)

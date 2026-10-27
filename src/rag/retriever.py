@@ -60,7 +60,7 @@ class RagAnswer:
 
     answer: str
     sources: list[Source]
-    confidence: float
+    retrieval_score: float  # mean similarity of the retrieved chunks - NOT answer correctness
     latency_ms: int
 
 
@@ -113,7 +113,7 @@ class RagRetriever:
             return RagAnswer(
                 answer="No regulatory context is available to answer this question.",
                 sources=[],
-                confidence=0.0,
+                retrieval_score=0.0,
                 latency_ms=latency_ms,
             )
 
@@ -138,12 +138,12 @@ class RagRetriever:
             )
             for chunk in chunks
         ]
-        confidence = round(sum(s.relevance_score for s in sources) / len(sources), 4)
+        retrieval_score = round(sum(s.relevance_score for s in sources) / len(sources), 4)
         latency_ms = int((time.perf_counter() - start) * 1000)
 
-        logger.info("RAG answer generated in %d ms (confidence=%.2f)", latency_ms, confidence)
+        logger.info("RAG answer generated in %d ms (retrieval_score=%.2f)", latency_ms, retrieval_score)
         return RagAnswer(
-            answer=answer_text, sources=sources, confidence=confidence, latency_ms=latency_ms
+            answer=answer_text, sources=sources, retrieval_score=retrieval_score, latency_ms=latency_ms
         )
 
     def regulatory_context(self) -> list[dict]:

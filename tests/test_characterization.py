@@ -7,8 +7,6 @@ failure, and the marker must be removed - so a fix can't land silently untested.
 
 import json
 
-import pytest
-
 from src.agent.graph import run_incident_classification
 from tests.fakes import ScriptedLLM, assessment, deps_for, extraction
 
@@ -83,7 +81,6 @@ class _StubRetriever:
         return 1
 
 
-@pytest.mark.xfail(strict=True, reason="B-05: TimingMiddleware runs outside LoggingMiddleware")
 async def test_b05_query_log_records_latency(api_client, monkeypatch):
     from src.api.deps import get_repository
 
@@ -94,7 +91,6 @@ async def test_b05_query_log_records_latency(api_client, monkeypatch):
     assert rows and rows[0].latency_ms is not None
 
 
-@pytest.mark.xfail(strict=True, reason="B-06: failed requests are never written to the query log")
 async def test_b06_server_error_is_logged(api_client):
     from src.api.deps import get_classification_fn, get_repository
     from src.api.main import app
