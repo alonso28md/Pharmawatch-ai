@@ -8,7 +8,7 @@ from fastapi import Header
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from src.agent.graph import run_incident_classification
+from src.agent.graph import run_incident_classification, stream_incident_classification
 from src.api.errors import ApiError
 from src.config import get_settings
 from src.db.repository import Repository
@@ -35,6 +35,11 @@ def get_repository() -> Repository:
 def get_classification_fn():
     """Return the incident-classification entrypoint (seam for test overrides)."""
     return run_incident_classification
+
+
+def get_classification_stream_fn():
+    """Return the streaming entrypoint yielding ("step", node) ... ("result", state)."""
+    return stream_incident_classification
 
 
 def _key_matches(provided: str | None, expected: str) -> bool:

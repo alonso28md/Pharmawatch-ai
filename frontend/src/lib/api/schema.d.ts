@@ -70,6 +70,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/report/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Stream
+         * @description Same as POST /report, streamed as server-sent events.
+         *
+         *     Events: `step` {"node", "index"} each time a LangGraph node finishes (the graph's own
+         *     update events, in order); then `result` (a ReportResponse) or `error`
+         *     {"code", "message"}. Validation and auth errors are returned before the stream starts.
+         */
+        post: operations["report_stream_report_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/{incident_id}": {
         parameters: {
             query?: never;
@@ -181,6 +205,21 @@ export interface components {
             retrieval_score: number;
             /** Processing Time Ms */
             processing_time_ms: number;
+            /**
+             * Context
+             * @default []
+             */
+            context: components["schemas"]["ContextChunk"][];
+            /**
+             * Cited Labels
+             * @default []
+             */
+            cited_labels: string[];
+            /**
+             * Answered From Context
+             * @default true
+             */
+            answered_from_context: boolean;
         };
         /**
          * ConfigResponse
@@ -197,6 +236,22 @@ export interface components {
             supported_languages: string[];
             /** Endpoints */
             endpoints: string[];
+        };
+        /**
+         * ContextChunk
+         * @description One retrieved chunk as given to the model, with its citation label.
+         */
+        ContextChunk: {
+            /** Label */
+            label: string;
+            /** Chunk Id */
+            chunk_id: string;
+            /** Document */
+            document: string;
+            /** Section */
+            section: string;
+            /** Text */
+            text: string;
         };
         /**
          * EvaluateRequest
@@ -501,6 +556,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_stream_report_stream_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Server-sent events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Validation Error */

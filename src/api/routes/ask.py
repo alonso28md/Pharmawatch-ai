@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request
 
 from src.api.deps import get_retriever, limiter, verify_api_key
 from src.api.middleware import RequestLog, get_request_log
-from src.api.schemas import AskRequest, AskResponse, Source
+from src.api.schemas import AskRequest, AskResponse, ContextChunk, Source
 from src.api.security import sanitize_user_text
 from src.config import get_settings
 
@@ -47,4 +47,7 @@ async def ask(
         ],
         retrieval_score=result.retrieval_score,
         processing_time_ms=processing_time_ms,
+        context=[ContextChunk(**chunk) for chunk in result.context],
+        cited_labels=result.cited_labels,
+        answered_from_context=bool(result.cited_labels),
     )

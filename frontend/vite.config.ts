@@ -6,9 +6,9 @@ import { defineConfig } from "vite";
 // Dev: the app talks to /api/*, proxied to the FastAPI backend (root paths).
 // Mock mode (`--mode mock`): MSW answers /api/* in the browser; no backend needed.
 // Production build: served by FastAPI under /app and calls the API on the same origin.
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, isPreview }) => ({
   plugins: [react(), tailwindcss()],
-  base: command === "build" ? "/app/" : "/",
+  base: command === "build" || isPreview ? "/app/" : "/",
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   server: {
     port: 5173,

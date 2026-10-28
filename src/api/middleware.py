@@ -19,7 +19,7 @@ from starlette.requests import Request
 logger = logging.getLogger(__name__)
 
 # Only these endpoints are operational traffic worth logging (not /health, /docs, static...).
-BUSINESS_PATHS = ("/ask", "/report", "/evaluate")
+BUSINESS_PATHS = ("/ask", "/report", "/report/stream", "/evaluate")
 
 
 @dataclass

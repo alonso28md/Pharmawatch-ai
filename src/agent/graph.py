@@ -167,6 +167,32 @@ def build_initial_state(
     )
 
 
+def stream_incident_classification(
+    description: str,
+    device_name_hint: str | None = None,
+    device_class_hint: str | None = None,
+    deps: AgentDeps | None = None,
+):
+    """Run the graph and yield its real progress.
+
+    Yields ("step", node_name) each time a LangGraph node finishes, in execution order,
+    then ("result", final_state). Nothing is synthesised: the steps are the graph's own
+    update events.
+    """
+    graph = build_graph(deps) if deps is not None else get_default_graph()
+    final_state: dict = {}
+    for mode, chunk in graph.stream(
+        build_initial_state(description, device_name_hint, device_class_hint),
+        stream_mode=["updates", "values"],
+    ):
+        if mode == "updates":
+            for node in chunk:
+                yield "step", node
+        else:
+            final_state = chunk
+    yield "result", final_state
+
+
 def run_incident_classification(
     description: str,
     device_name_hint: str | None = None,

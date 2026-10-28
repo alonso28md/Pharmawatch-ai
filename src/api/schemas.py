@@ -49,6 +49,16 @@ class Source(BaseModel):
     chunk_id: str | None = None
 
 
+class ContextChunk(BaseModel):
+    """One retrieved chunk as given to the model, with its citation label."""
+
+    label: str
+    chunk_id: str
+    document: str
+    section: str
+    text: str
+
+
 class ReportResponse(BaseModel):
     """POST /report response body."""
 
@@ -81,6 +91,13 @@ class AskResponse(BaseModel):
     # not whether the answer is correct (an abstention can still score ~0.6).
     retrieval_score: float
     processing_time_ms: int
+    # The labelled chunks the model saw ([C1]..[Ck]), full text, so a client can show the
+    # exact cited fragment; and the labels the answer actually cites.
+    context: list[ContextChunk] = []
+    cited_labels: list[str] = []
+    # False when the answer cites nothing: the model is instructed to cite every claim and
+    # to cite nothing when the corpus does not contain the answer (abstention signal).
+    answered_from_context: bool = True
 
 
 class EvaluationSummary(BaseModel):

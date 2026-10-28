@@ -19,12 +19,16 @@ def compute_operational_metrics(queries: list[QueryLog]) -> dict:
     p50_latency_ms, p95_latency_ms = latency_percentiles(latencies)
 
     def is_server_error(q: QueryLog) -> bool:
-        return (q.status_code or 0) >= 500 or (q.status_code is None and bool(q.error))
+        # 5xx, or an error recorded on a non-4xx row (a stream that failed after its 200).
+        status = q.status_code or 0
+        return status >= 500 or (bool(q.error) and not 400 <= status < 500)
 
     server_errors = sum(1 for q in queries if is_server_error(q))
     client_errors = sum(1 for q in queries if q.status_code is not None and 400 <= q.status_code < 500)
 
-    reports = [q for q in queries if q.endpoint == "/report" and (q.status_code or 200) < 400]
+    reports = [
+        q for q in queries if q.endpoint in ("/report", "/report/stream") and (q.status_code or 200) < 400
+    ]
     escalated = [q for q in reports if q.escalated]
     blocking = [q for q in reports if q.escalation_level == "blocking"]
     distribution = dict(Counter(q.severity for q in reports if q.severity))

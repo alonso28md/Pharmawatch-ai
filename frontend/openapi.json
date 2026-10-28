@@ -148,6 +148,62 @@
         }
       }
     },
+    "/report/stream": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "Report Stream",
+        "description": "Same as POST /report, streamed as server-sent events.\n\nEvents: `step` {\"node\", \"index\"} each time a LangGraph node finishes (the graph's own\nupdate events, in order); then `result` (a ReportResponse) or `error`\n{\"code\", \"message\"}. Validation and auth errors are returned before the stream starts.",
+        "operationId": "report_stream_report_stream_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reports/{incident_id}": {
       "get": {
         "tags": [
@@ -390,6 +446,27 @@
           "processing_time_ms": {
             "type": "integer",
             "title": "Processing Time Ms"
+          },
+          "context": {
+            "items": {
+              "$ref": "#/components/schemas/ContextChunk"
+            },
+            "type": "array",
+            "title": "Context",
+            "default": []
+          },
+          "cited_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cited Labels",
+            "default": []
+          },
+          "answered_from_context": {
+            "type": "boolean",
+            "title": "Answered From Context",
+            "default": true
           }
         },
         "type": "object",
@@ -441,6 +518,40 @@
         ],
         "title": "ConfigResponse",
         "description": "GET /config response body: capabilities/limits a future client can rely on."
+      },
+      "ContextChunk": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "document": {
+            "type": "string",
+            "title": "Document"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "chunk_id",
+          "document",
+          "section",
+          "text"
+        ],
+        "title": "ContextChunk",
+        "description": "One retrieved chunk as given to the model, with its citation label."
       },
       "EvaluateRequest": {
         "properties": {

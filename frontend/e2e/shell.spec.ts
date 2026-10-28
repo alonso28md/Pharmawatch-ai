@@ -11,7 +11,7 @@ test.describe("app shell (mock mode)", () => {
   for (const vp of WIDTHS) {
     test(`renders navigation, status and disclaimer at ${vp.name} width`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.goto("/");
+      await page.goto("./");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByText(/Requiere revisión humana/)).toBeVisible();
       await expect(page.getByText(/Modo demostración/)).toBeVisible();
