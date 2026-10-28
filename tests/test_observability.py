@@ -46,14 +46,18 @@ def _graph_classifier(category="other_serious", delay=0.0):
     from src.agent.graph import run_incident_classification
 
     def classify(description, **kwargs):
-        llm = ScriptedLLM(extract=extraction(device_class="IIb"), assess=assessment(category), delay=delay)
+        llm = ScriptedLLM(
+            extract=extraction(device_class="IIb"), assess=assessment(category), delay=delay
+        )
         return run_incident_classification(description, deps=deps_for(llm), **kwargs)
 
     return classify
 
 
 def _rows(endpoint=None):
-    return [r for r in get_repository().list_queries() if endpoint is None or r.endpoint == endpoint]
+    return [
+        r for r in get_repository().list_queries() if endpoint is None or r.endpoint == endpoint
+    ]
 
 
 # --- B-04: the event loop stays free --------------------------------------------------------
@@ -120,7 +124,11 @@ async def test_unhandled_exception_is_a_logged_uniform_500(api_client, override_
     override_classify(boom)
     response = await api_client.post("/report", json=REPORT)
     assert response.status_code == 500
-    assert response.json() == {"code": "internal_error", "message": "Internal server error", "details": None}
+    assert response.json() == {
+        "code": "internal_error",
+        "message": "Internal server error",
+        "details": None,
+    }
     assert response.headers["x-content-type-options"] == "nosniff"
     (row,) = _rows("/report")
     assert row.status_code == 500 and row.error == "internal_error"
@@ -140,11 +148,19 @@ async def test_process_time_header_is_set_everywhere(api_client):
 # --- /metrics ---------------------------------------------------------------------------------
 
 
-async def test_metrics_report_real_latency_and_errors_and_exclude_demo(api_client, override_classify):
+async def test_metrics_report_real_latency_and_errors_and_exclude_demo(
+    api_client, override_classify
+):
     repo = get_repository()
     for _ in range(5):
-        repo.log_query(endpoint="/report", severity="serious", latency_ms=99999.0, status_code=200,
-                       source="demo", escalated=True)
+        repo.log_query(
+            endpoint="/report",
+            severity="serious",
+            latency_ms=99999.0,
+            status_code=200,
+            source="demo",
+            escalated=True,
+        )
     override_classify(_graph_classifier())
     await api_client.post("/report", json=REPORT)
     await api_client.post("/report", json={"description": "short"})
@@ -263,13 +279,14 @@ def test_legacy_seed_rows_are_marked_demo_on_upgrade(tmp_path):
     with sqlite3.connect(path) as conn:
         conn.execute(OLD_QUERIES_DDL)
         rows = [
-            ("2026-10-27 11:50:47", "/ask", 0, 3100.0, "(demo) answer with citations"),   # seed_db
-            ("2026-10-27 11:50:47", "/report", 1, 9000.0, "severity=serious"),           # seed_db
-            ("2026-10-27 12:31:24", "/evaluate", 0, None, None),                        # real (B-05: no latency)
-            ("2026-10-27 12:54:16", "/", 0, None, None),                                # real, non-business
+            ("2026-10-27 11:50:47", "/ask", 0, 3100.0, "(demo) answer with citations"),  # seed_db
+            ("2026-10-27 11:50:47", "/report", 1, 9000.0, "severity=serious"),  # seed_db
+            ("2026-10-27 12:31:24", "/evaluate", 0, None, None),  # real (B-05: no latency)
+            ("2026-10-27 12:54:16", "/", 0, None, None),  # real, non-business
         ]
         conn.executemany(
-            "INSERT INTO queries (timestamp, endpoint, escalated, latency_ms, output_summary) VALUES (?,?,?,?,?)", rows
+            "INSERT INTO queries (timestamp, endpoint, escalated, latency_ms, output_summary) VALUES (?,?,?,?,?)",
+            rows,
         )
 
     repo = Repository(path)
@@ -277,7 +294,7 @@ def test_legacy_seed_rows_are_marked_demo_on_upgrade(tmp_path):
     assert by_endpoint == {"/ask": "demo", "/report": "demo", "/evaluate": "live", "/": "live"}
 
     repo.log_query(endpoint="/ask", latency_ms=5.0)  # a new row without status must stay live
-    Repository(path)                                 # restart: the one-off update does not re-run
+    Repository(path)  # restart: the one-off update does not re-run
     assert [r.source for r in Repository(path).list_queries() if r.latency_ms == 5.0] == ["live"]
 
 

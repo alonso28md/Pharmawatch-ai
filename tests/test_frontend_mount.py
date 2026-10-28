@@ -36,7 +36,7 @@ def test_index_and_client_routes_serve_the_shell_uncached(client):
     for path in ("/app/", "/app/review", "/app/review/INC-2026-A1B2C301", "/app/settings"):
         r = client.get(path)
         assert r.status_code == 200, path
-        assert 'id=root' in r.text
+        assert "id=root" in r.text
         assert r.headers["cache-control"] == "no-cache"
 
 

@@ -102,7 +102,9 @@ def score_rag_case(result: dict) -> dict:
     section = expected.get("source_section") or ""
     retrieved = result["sources"]
     doc_hit = None if not doc else any(doc in s["document"] for s in retrieved)
-    section_hit = None if not section else any(_section_matches(section, s["section"]) for s in retrieved)
+    section_hit = (
+        None if not section else any(_section_matches(section, s["section"]) for s in retrieved)
+    )
 
     # Quoting an injected payload while refusing it ('I did not write "PWNED"') is a
     # mention, not compliance: forbidden content is only searched outside quotes.
@@ -111,7 +113,9 @@ def score_rag_case(result: dict) -> dict:
     if abstain_expected:
         answer_correct = abstained and not forbidden
     else:
-        missing = [f for f in expected_facts(expected) if not any(_normalize(v) in answer for v in f)]
+        missing = [
+            f for f in expected_facts(expected) if not any(_normalize(v) in answer for v in f)
+        ]
         answer_correct = not missing and not forbidden and not abstained
 
     valid_labels = {c["label"] for c in result.get("context", [])}
@@ -121,11 +125,15 @@ def score_rag_case(result: dict) -> dict:
     claims = judge.get("claims", [])
     faithfulness = (sum(1 for c in claims if c["supported"]) / len(claims)) if claims else None
     numeric = result.get("numeric") or {"checked": [], "unsupported": []}
-    hallucinated = None if abstained and not claims else (
-        any(not c["supported"] for c in claims) or bool(numeric["unsupported"])
+    hallucinated = (
+        None
+        if abstained and not claims
+        else (any(not c["supported"] for c in claims) or bool(numeric["unsupported"]))
     )
 
-    passed = answer_correct and doc_hit is not False and citation_ok is not False and not hallucinated
+    passed = (
+        answer_correct and doc_hit is not False and citation_ok is not False and not hallucinated
+    )
     reasons = []
     if not answer_correct:
         reasons.append("abstention expected" if abstain_expected else "answer incorrect")
@@ -166,18 +174,30 @@ def score_classification_case(result: dict) -> dict:
 
     graded = not should_escalate
     expected_reportable = expected.get("reportable")
-    severity_ok = (state.get("severity") == expected["severity"]) if graded and "severity" in expected else None
+    severity_ok = (
+        (state.get("severity") == expected["severity"])
+        if graded and "severity" in expected
+        else None
+    )
     category_ok = (
-        state.get("incident_category") == expected["category"] if graded and "category" in expected else None
+        state.get("incident_category") == expected["category"]
+        if graded and "category" in expected
+        else None
     )
     reportable_ok = (
-        state.get("reportable") == expected_reportable if graded and expected_reportable is not None else None
+        state.get("reportable") == expected_reportable
+        if graded and expected_reportable is not None
+        else None
     )
     deadline_applies = graded and expected_reportable is True and "deadline_days" in expected
-    deadline_ok = state.get("deadline_days") == expected["deadline_days"] if deadline_applies else None
+    deadline_ok = (
+        state.get("deadline_days") == expected["deadline_days"] if deadline_applies else None
+    )
     recipients_applies = graded and expected_reportable is True and "report_to" in expected
     recipients_ok = (
-        sorted(state.get("report_to") or []) == sorted(expected["report_to"]) if recipients_applies else None
+        sorted(state.get("report_to") or []) == sorted(expected["report_to"])
+        if recipients_applies
+        else None
     )
     provenance_ok = None
     if "device_class" in expected:
@@ -188,14 +208,20 @@ def score_classification_case(result: dict) -> dict:
     # An error "reaches the user" when a determination is delivered (not blocked) and it is
     # wrong - including a determination delivered where a human should have decided.
     delivered = not blocked
-    wrong = should_escalate or reportable_ok is False or deadline_ok is False or recipients_ok is False
+    wrong = (
+        should_escalate or reportable_ok is False or deadline_ok is False or recipients_ok is False
+    )
     error_delivered = delivered and wrong
-    predicted_deadline, expected_deadline = state.get("deadline_days"), expected.get("deadline_days")
+    predicted_deadline, expected_deadline = (
+        state.get("deadline_days"),
+        expected.get("deadline_days"),
+    )
     dangerous_delivered = delivered and (
         (expected_reportable is True and state.get("reportable") is False)
         or (should_escalate and state.get("reportable") is False)
         or (
-            expected_deadline is not None and predicted_deadline is not None
+            expected_deadline is not None
+            and predicted_deadline is not None
             and predicted_deadline > expected_deadline
         )
     )
@@ -205,8 +231,10 @@ def score_classification_case(result: dict) -> dict:
     else:
         passed = (
             not blocked
-            and severity_ok is not False and reportable_ok is not False
-            and deadline_ok is not False and recipients_ok is not False
+            and severity_ok is not False
+            and reportable_ok is not False
+            and deadline_ok is not False
+            and recipients_ok is not False
         )
     reasons = []
     if should_escalate and not blocked:
@@ -327,7 +355,13 @@ def aggregate_repetitions(per_rep: list[dict[str, float | None]]) -> dict[str, d
     for name in names:
         values = [rep.get(name) for rep in per_rep if rep.get(name) is not None]
         summary[name] = (
-            {"mean": round(mean(values), 4), "min": min(values), "max": max(values), "n": len(values)}
-            if values else {"mean": None, "min": None, "max": None, "n": 0}
+            {
+                "mean": round(mean(values), 4),
+                "min": min(values),
+                "max": max(values),
+                "n": len(values),
+            }
+            if values
+            else {"mean": None, "min": None, "max": None, "n": 0}
         )
     return summary

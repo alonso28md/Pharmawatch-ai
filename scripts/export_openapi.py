@@ -17,7 +17,9 @@ from src.api.main import app  # noqa: E402
 
 def main() -> None:
     target = ROOT / "frontend" / "openapi.json"
-    target.write_text(json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"Wrote {target.relative_to(ROOT)}")
 
 

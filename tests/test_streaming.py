@@ -21,7 +21,9 @@ def _reset_rate_limiter():
 
 
 def _llm(category="unanticipated_serious_deterioration", **extract):
-    return ScriptedLLM(extract=extraction(device_class="IIb", **extract), assess=assessment(category))
+    return ScriptedLLM(
+        extract=extraction(device_class="IIb", **extract), assess=assessment(category)
+    )
 
 
 def _parse_sse(body: str) -> list[tuple[str, dict]]:
@@ -39,8 +41,10 @@ def stream_with(api_client):
     def install(llm_or_fn):
         fn = llm_or_fn
         if isinstance(llm_or_fn, ScriptedLLM):
+
             def fn(description, **kw):
                 return stream_incident_classification(description, deps=deps_for(llm_or_fn), **kw)
+
         app.dependency_overrides[get_classification_stream_fn] = lambda: fn
 
     yield install
@@ -54,11 +58,23 @@ def test_stream_yields_the_graph_nodes_in_order_and_the_same_final_state():
             steps.append(value)
         else:
             final = value
-    assert steps == ["extract_info", "classify_device", "assess_severity", "gate",
-                     "determine_reporting", "generate_report", "finalize"]
+    assert steps == [
+        "extract_info",
+        "classify_device",
+        "assess_severity",
+        "gate",
+        "determine_reporting",
+        "generate_report",
+        "finalize",
+    ]
     reference = run_incident_classification(TEXT, deps=deps_for(_llm()))
-    assert {k: final[k] for k in ("deadline_days", "incident_category", "escalation_level", "processing_steps")} == \
-           {k: reference[k] for k in ("deadline_days", "incident_category", "escalation_level", "processing_steps")}
+    assert {
+        k: final[k]
+        for k in ("deadline_days", "incident_category", "escalation_level", "processing_steps")
+    } == {
+        k: reference[k]
+        for k in ("deadline_days", "incident_category", "escalation_level", "processing_steps")
+    }
 
 
 async def test_report_stream_emits_real_steps_then_the_result(api_client, stream_with):
@@ -102,21 +118,39 @@ async def test_model_outage_mid_stream_becomes_an_error_event(api_client, stream
 
     stream_with(failing)
     events = _parse_sse((await api_client.post("/report/stream", json={"description": TEXT})).text)
-    assert events == [("step", {"node": "extract_info", "index": 1}),
-                      ("error", {"code": "llm_unavailable", "message": "The language model is temporarily unavailable"})]
+    assert events == [
+        ("step", {"node": "extract_info", "index": 1}),
+        (
+            "error",
+            {"code": "llm_unavailable", "message": "The language model is temporarily unavailable"},
+        ),
+    ]
 
 
 async def test_ask_returns_labelled_context_and_citation_signal(api_client, monkeypatch):
-    context = [{"label": "C1", "chunk_id": "c1", "document": "MDR", "section": "Article 87", "text": "not later than 15 days"}]
+    context = [
+        {
+            "label": "C1",
+            "chunk_id": "c1",
+            "document": "MDR",
+            "section": "Article 87",
+            "text": "not later than 15 days",
+        }
+    ]
 
     class Stub:
         def __init__(self, cited):
             self.cited = cited
 
         def answer(self, question, **kwargs):
-            return RagAnswer("15 days [C1]" if self.cited else "Not in the context.",
-                             [Source("MDR", "Article 87", "t", 0.8, "c1")], 0.8, 1,
-                             context=context, cited_labels=self.cited)
+            return RagAnswer(
+                "15 days [C1]" if self.cited else "Not in the context.",
+                [Source("MDR", "Article 87", "t", 0.8, "c1")],
+                0.8,
+                1,
+                context=context,
+                cited_labels=self.cited,
+            )
 
     monkeypatch.setattr("src.api.routes.ask.get_retriever", lambda: Stub(["C1"]))
     body = (await api_client.post("/ask", json={"question": "What is the deadline?"})).json()

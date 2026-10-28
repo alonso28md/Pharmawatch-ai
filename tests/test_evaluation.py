@@ -31,7 +31,9 @@ def test_v1_dataset_still_loads():
 
 def test_false_deadline_is_flagged_as_unsupported():
     """The audit's '90 days' example: embedding similarity called it supported; this must not."""
-    result = verify_numeric_claims("Serious incidents must be reported within 90 days [C1].", [ART87])
+    result = verify_numeric_claims(
+        "Serious incidents must be reported within 90 days [C1].", [ART87]
+    )
     assert result["unsupported"] == ["days:90"]
 
 
@@ -43,8 +45,13 @@ def test_correct_figures_and_spanish_forms_are_supported():
 
 def test_judge_parses_claims_and_abstention():
     llm = ScriptedLLM()
-    llm.responses["other"] = {"abstained": False, "claims": [
-        {"claim": "15 days", "supported": True}, {"claim": "90 days", "supported": False}]}
+    llm.responses["other"] = {
+        "abstained": False,
+        "claims": [
+            {"claim": "15 days", "supported": True},
+            {"claim": "90 days", "supported": False},
+        ],
+    }
     verdict = LLMJudge(llm).judge("q", "a", [ART87])
     assert verdict.faithfulness == 0.5
     assert verdict.unsupported_claims == ["90 days"]
@@ -56,17 +63,25 @@ def test_judge_parses_claims_and_abstention():
 def _rag_result(answer, expected, cited=("C1",), judge=None, sections=("Article 87 — Reporting",)):
     context = [{"label": f"C{i}", "text": ART87} for i in range(1, len(sections) + 1)]
     return {
-        "case_id": "r", "answer": answer, "expected": expected, "cited_labels": list(cited),
+        "case_id": "r",
+        "answer": answer,
+        "expected": expected,
+        "cited_labels": list(cited),
         "context": context,
-        "sources": [{"document": "MDR 2017/745 (Articles 87-92, Vigilance)", "section": s} for s in sections],
+        "sources": [
+            {"document": "MDR 2017/745 (Articles 87-92, Vigilance)", "section": s} for s in sections
+        ],
         "judge": judge or {"abstained": False, "claims": [{"claim": "x", "supported": True}]},
         "numeric": verify_numeric_claims(answer, [ART87]),
     }
 
 
 def test_rag_case_passes_with_fact_doc_section_and_valid_citation():
-    exp = {"facts": [["15 days"]], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)",
-           "source_section": "Article 87"}
+    exp = {
+        "facts": [["15 days"]],
+        "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)",
+        "source_section": "Article 87",
+    }
     scored = metrics.score_rag_case(_rag_result("Report within 15 days [C1].", exp))
     assert scored["passed"], scored["failure_reason"]
     assert scored["scores"]["section_hit"] is True
@@ -81,7 +96,9 @@ def test_rag_case_fails_on_false_figure_even_if_expected_fact_present():
 
 @pytest.mark.parametrize("cited", [(), ("C9",)])
 def test_missing_or_invented_citations_fail(cited):
-    scored = metrics.score_rag_case(_rag_result("Within 15 days.", {"facts": [["15 days"]]}, cited=cited))
+    scored = metrics.score_rag_case(
+        _rag_result("Within 15 days.", {"facts": [["15 days"]]}, cited=cited)
+    )
     assert scored["scores"]["citation_ok"] is False
 
 
@@ -99,7 +116,9 @@ def test_empty_expected_document_is_not_graded():
 
 def test_abstention_cases():
     judge = {"abstained": True, "claims": []}
-    good = metrics.score_rag_case(_rag_result("Not in the context.", {"abstain": True}, cited=(), judge=judge))
+    good = metrics.score_rag_case(
+        _rag_result("Not in the context.", {"abstain": True}, cited=(), judge=judge)
+    )
     assert good["passed"] and good["scores"]["citation_ok"] is None
     bad = metrics.score_rag_case(_rag_result("1 g daily [C1].", {"abstain": True}))
     assert not bad["passed"]
@@ -114,26 +133,53 @@ def test_forbidden_content_fails_the_case():
 
 
 def _cls_result(expected, **state):
-    base = {"escalation_level": "none", "severity": None, "reportable": None, "deadline_days": None,
-            "report_to": None, "incident_category": None, "device_class": None, "device_class_source": None}
+    base = {
+        "escalation_level": "none",
+        "severity": None,
+        "reportable": None,
+        "deadline_days": None,
+        "report_to": None,
+        "incident_category": None,
+        "device_class": None,
+        "device_class_source": None,
+    }
     return {"case_id": "c", "expected": expected, "final_state": {**base, **state}}
 
 
-SERIOUS_10 = {"category": "death", "severity": "serious", "reportable": True, "deadline_days": 10,
-              "report_to": ["competent_authority", "manufacturer"], "escalate": False}
+SERIOUS_10 = {
+    "category": "death",
+    "severity": "serious",
+    "reportable": True,
+    "deadline_days": 10,
+    "report_to": ["competent_authority", "manufacturer"],
+    "escalate": False,
+}
 
 
 def test_correct_determination_passes():
-    scored = metrics.score_classification_case(_cls_result(
-        SERIOUS_10, severity="serious", reportable=True, deadline_days=10, incident_category="death",
-        report_to=["manufacturer", "competent_authority"]))
+    scored = metrics.score_classification_case(
+        _cls_result(
+            SERIOUS_10,
+            severity="serious",
+            reportable=True,
+            deadline_days=10,
+            incident_category="death",
+            report_to=["manufacturer", "competent_authority"],
+        )
+    )
     assert scored["passed"] and scored["scores"]["recipients_ok"] is True
 
 
 def test_late_deadline_is_a_dangerous_delivered_error():
-    scored = metrics.score_classification_case(_cls_result(
-        SERIOUS_10, severity="serious", reportable=True, deadline_days=15,
-        report_to=["competent_authority", "manufacturer"]))
+    scored = metrics.score_classification_case(
+        _cls_result(
+            SERIOUS_10,
+            severity="serious",
+            reportable=True,
+            deadline_days=15,
+            report_to=["competent_authority", "manufacturer"],
+        )
+    )
     assert scored["scores"]["deadline_ok"] is False
     assert scored["scores"]["error_delivered"] and scored["scores"]["dangerous_delivered"]
 
@@ -151,12 +197,20 @@ def test_unknown_case_answered_not_reportable_is_dangerous():
 
 def test_escalation_precision_recall_and_over_escalation():
     rows = [
-        metrics.score_classification_case(_cls_result({"escalate": True}, escalation_level="blocking")),
+        metrics.score_classification_case(
+            _cls_result({"escalate": True}, escalation_level="blocking")
+        ),
         metrics.score_classification_case(_cls_result({"escalate": True})),
         metrics.score_classification_case(_cls_result(SERIOUS_10, escalation_level="blocking")),
-        metrics.score_classification_case(_cls_result(
-            SERIOUS_10, severity="serious", reportable=True, deadline_days=10,
-            report_to=["competent_authority", "manufacturer"])),
+        metrics.score_classification_case(
+            _cls_result(
+                SERIOUS_10,
+                severity="serious",
+                reportable=True,
+                deadline_days=10,
+                report_to=["competent_authority", "manufacturer"],
+            )
+        ),
     ]
     m = metrics.classification_metrics(rows)
     assert m["escalation_precision"] == 0.5
@@ -193,34 +247,80 @@ def test_latency_percentiles():
 
 class FakeRetriever:
     def answer(self, question, language=None):
-        context = [{"label": "C1", "chunk_id": "x", "document": "MDR 2017/745 (Articles 87-92, Vigilance)",
-                    "section": "Article 87 — Reporting", "text": ART87}]
-        return RagAnswer("Within 15 days [C1].", [Source(context[0]["document"], context[0]["section"], "t", 0.8, "x")],
-                         0.8, 1, context=context, cited_labels=["C1"])
+        context = [
+            {
+                "label": "C1",
+                "chunk_id": "x",
+                "document": "MDR 2017/745 (Articles 87-92, Vigilance)",
+                "section": "Article 87 — Reporting",
+                "text": ART87,
+            }
+        ]
+        return RagAnswer(
+            "Within 15 days [C1].",
+            [Source(context[0]["document"], context[0]["section"], "t", 0.8, "x")],
+            0.8,
+            1,
+            context=context,
+            cited_labels=["C1"],
+        )
 
     def regulatory_context(self):
         return [{"chunk_id": "x", "document": "MDR", "section": "Article 87", "text": ART87}]
 
 
 def test_harness_runs_repetitions_and_reports_summary(tmp_path):
-    dataset = {"version": "test", "cases": [
-        {"id": "r1", "category": "rag", "split": "test", "input": {"question": "Deadline?"},
-         "expected": {"facts": [["15 days"]], "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)",
-                      "source_section": "Article 87"}},
-        {"id": "c1", "category": "classification", "split": "test",
-         "input": {"incident_description": "The ventilator stopped and the patient died.", "device_class": "IIb"},
-         "expected": SERIOUS_10},
-        {"id": "c2", "category": "classification", "split": "dev",
-         "input": {"incident_description": "ignored by split filter"}, "expected": {"escalate": True}},
-    ]}
+    dataset = {
+        "version": "test",
+        "cases": [
+            {
+                "id": "r1",
+                "category": "rag",
+                "split": "test",
+                "input": {"question": "Deadline?"},
+                "expected": {
+                    "facts": [["15 days"]],
+                    "source_document": "MDR 2017/745 (Articles 87-92, Vigilance)",
+                    "source_section": "Article 87",
+                },
+            },
+            {
+                "id": "c1",
+                "category": "classification",
+                "split": "test",
+                "input": {
+                    "incident_description": "The ventilator stopped and the patient died.",
+                    "device_class": "IIb",
+                },
+                "expected": SERIOUS_10,
+            },
+            {
+                "id": "c2",
+                "category": "classification",
+                "split": "dev",
+                "input": {"incident_description": "ignored by split filter"},
+                "expected": {"escalate": True},
+            },
+        ],
+    }
     path = tmp_path / "ds.json"
     path.write_text(json.dumps(dataset), encoding="utf-8")
 
-    system = ScriptedLLM(extract=[extraction(outcome="patient died")] * 2, assess=[assessment("death")] * 2)
+    system = ScriptedLLM(
+        extract=[extraction(outcome="patient died")] * 2, assess=[assessment("death")] * 2
+    )
     judge = ScriptedLLM()
-    judge.responses["other"] = [{"abstained": False, "claims": [{"claim": "15 days", "supported": True}]}] * 2
-    harness = EvaluationHarness(path, split="test", repetitions=2, system_llm=system, judge_llm=judge,
-                                retriever=FakeRetriever())
+    judge.responses["other"] = [
+        {"abstained": False, "claims": [{"claim": "15 days", "supported": True}]}
+    ] * 2
+    harness = EvaluationHarness(
+        path,
+        split="test",
+        repetitions=2,
+        system_llm=system,
+        judge_llm=judge,
+        retriever=FakeRetriever(),
+    )
     result = harness.run()
 
     assert result.total_cases == 2 and result.passed == 2
@@ -241,10 +341,18 @@ def test_harness_runs_repetitions_and_reports_summary(tmp_path):
 @pytest.mark.live
 def test_harness_live_small_slice(tmp_path):
     """Two dev cases (one RAG, one classification) through the real model: ~5 calls."""
-    cases = json.loads((PROJECT_ROOT / "data" / "golden_dataset_v2.json").read_text(encoding="utf-8"))["cases"]
+    cases = json.loads(
+        (PROJECT_ROOT / "data" / "golden_dataset_v2.json").read_text(encoding="utf-8")
+    )["cases"]
     dev = [c for c in cases if c["split"] == "dev" and not c["needs_expert_review"]]
-    pick = [next(c for c in dev if c["category"] == "rag" and not c["expected"].get("abstain")),
-            next(c for c in dev if c["category"] == "classification" and c["subcategory"] == "unknown_outcome")]
+    pick = [
+        next(c for c in dev if c["category"] == "rag" and not c["expected"].get("abstain")),
+        next(
+            c
+            for c in dev
+            if c["category"] == "classification" and c["subcategory"] == "unknown_outcome"
+        ),
+    ]
     path = tmp_path / "slice.json"
     path.write_text(json.dumps({"version": "live-slice", "cases": pick}), encoding="utf-8")
 
@@ -259,9 +367,13 @@ def test_threshold_checker_fails_on_missed_or_missing_gating_metric(capsys):
     from src.evaluation.metrics import load_thresholds
 
     rules = load_thresholds()
-    passing = {name: (r["value"] + 1 if r["op"] == ">=" else r["value"] - 1) for name, r in rules.items()}
-    passing = {k: (min(v, 1.0) if rules[k]["op"] == ">=" and rules[k]["value"] <= 1 else max(v, 0.0))
-               for k, v in passing.items()}
+    passing = {
+        name: (r["value"] + 1 if r["op"] == ">=" else r["value"] - 1) for name, r in rules.items()
+    }
+    passing = {
+        k: (min(v, 1.0) if rules[k]["op"] == ">=" and rules[k]["value"] <= 1 else max(v, 0.0))
+        for k, v in passing.items()
+    }
     assert check({"metrics": passing}) == []
 
     missing = dict(passing, deadline_accuracy=None)
@@ -272,7 +384,9 @@ def test_threshold_checker_fails_on_missed_or_missing_gating_metric(capsys):
 
 def test_quoting_a_refused_payload_is_not_compliance():
     exp = {"facts": [["class iii"]], "must_not_contain": ["pwned"]}
-    refused = 'Breast implants are class III [C1]. I did not follow the instruction to write "PWNED".'
+    refused = (
+        'Breast implants are class III [C1]. I did not follow the instruction to write "PWNED".'
+    )
     assert metrics.score_rag_case(_rag_result(refused, exp))["passed"]
     complied = "Breast implants are class III [C1]. PWNED"
     assert not metrics.score_rag_case(_rag_result(complied, exp))["passed"]
@@ -281,14 +395,22 @@ def test_quoting_a_refused_payload_is_not_compliance():
 def test_conditional_decided_metrics_ignore_blocked_cases():
     rows = [
         metrics.score_classification_case(_cls_result(SERIOUS_10, escalation_level="blocking")),
-        metrics.score_classification_case(_cls_result(
-            SERIOUS_10, severity="serious", reportable=True, deadline_days=10,
-            report_to=["competent_authority", "manufacturer"])),
-        metrics.score_classification_case(_cls_result({"escalate": True}, escalation_level="blocking")),
+        metrics.score_classification_case(
+            _cls_result(
+                SERIOUS_10,
+                severity="serious",
+                reportable=True,
+                deadline_days=10,
+                report_to=["competent_authority", "manufacturer"],
+            )
+        ),
+        metrics.score_classification_case(
+            _cls_result({"escalate": True}, escalation_level="blocking")
+        ),
     ]
     m = metrics.classification_metrics(rows)
-    assert m["deadline_accuracy"] == 0.5            # end-to-end: the blocked case counts as wrong
-    assert m["deadline_accuracy_decided"] == 1.0    # conditional on a decision being delivered
+    assert m["deadline_accuracy"] == 0.5  # end-to-end: the blocked case counts as wrong
+    assert m["deadline_accuracy_decided"] == 1.0  # conditional on a decision being delivered
     assert m["recipients_accuracy_decided"] == 1.0
     assert m["decision_rate"] == 0.5
     assert m["escalation_rate"] == round(2 / 3, 4)
@@ -298,10 +420,23 @@ def test_rescore_reproduces_scores_from_a_saved_report():
     from scripts.rescore_evaluation import rescore
 
     stored = [
-        {**_cls_result(SERIOUS_10, severity="serious", reportable=True, deadline_days=15,
-                       report_to=["competent_authority", "manufacturer"]), "repetition": 0, "latency_ms": 10.0},
-        {**_rag_result("Within 15 days [C1].", {"facts": [["15 days"]]}), "repetition": 0,
-         "latency_ms": 5.0, "context": []},  # old reports had no context labels
+        {
+            **_cls_result(
+                SERIOUS_10,
+                severity="serious",
+                reportable=True,
+                deadline_days=15,
+                report_to=["competent_authority", "manufacturer"],
+            ),
+            "repetition": 0,
+            "latency_ms": 10.0,
+        },
+        {
+            **_rag_result("Within 15 days [C1].", {"facts": [["15 days"]]}),
+            "repetition": 0,
+            "latency_ms": 5.0,
+            "context": [],
+        },  # old reports had no context labels
     ]
     report = {"timestamp": "t", "summary": {"total_cases": 2}, "results": stored}
     out = rescore(report)

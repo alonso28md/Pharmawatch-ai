@@ -12,13 +12,33 @@ logger = logging.getLogger(__name__)
 
 
 def _compact_result(r: dict) -> dict:
-    keep = ("case_id", "repetition", "split", "language", "subcategory", "tags", "passed",
-            "failure_reason", "latency_ms", "scores", "expected", "error")
+    keep = (
+        "case_id",
+        "repetition",
+        "split",
+        "language",
+        "subcategory",
+        "tags",
+        "passed",
+        "failure_reason",
+        "latency_ms",
+        "scores",
+        "expected",
+        "error",
+    )
     out = {k: r[k] for k in keep if k in r}
     if "answer" in r:
-        out.update(question=r["question"], answer=r["answer"], cited_labels=r["cited_labels"],
-                   context=[{"label": c["label"], "chunk_id": c["chunk_id"]} for c in r.get("context", [])],
-                   sources=r["sources"], judge=r["judge"], numeric=r["numeric"])
+        out.update(
+            question=r["question"],
+            answer=r["answer"],
+            cited_labels=r["cited_labels"],
+            context=[
+                {"label": c["label"], "chunk_id": c["chunk_id"]} for c in r.get("context", [])
+            ],
+            sources=r["sources"],
+            judge=r["judge"],
+            numeric=r["numeric"],
+        )
     if "final_state" in r:
         out.update(description=r["description"], final_state=r["final_state"])
     return out
@@ -36,12 +56,18 @@ def to_json_dict(result: EvaluationRunResult, timestamp: str, dataset_label: str
             "total_cases": result.total_cases,
             "passed": result.passed,
             "failed": result.failed,
-            "pass_rate": round(result.passed / result.total_cases, 4) if result.total_cases else None,
+            "pass_rate": round(result.passed / result.total_cases, 4)
+            if result.total_cases
+            else None,
             "flaky_cases": result.flaky_cases,
         },
         "metrics": result.metrics,
         "metric_summary": {
-            name: {**stats, "threshold": thresholds.get(name), "meets_threshold": meets_threshold(name, stats["mean"])}
+            name: {
+                **stats,
+                "threshold": thresholds.get(name),
+                "meets_threshold": meets_threshold(name, stats["mean"]),
+            }
             for name, stats in result.metric_summary.items()
         },
         "failed_cases": result.failed_cases,
@@ -73,17 +99,24 @@ def render_markdown(result: EvaluationRunResult, timestamp: str, dataset_label: 
         rule = thresholds.get(name)
         ok = meets_threshold(name, value)
         status = "N/A" if ok is None else ("PASS" if ok else "FAIL")
-        fmt = (lambda v: "N/A" if v is None else f"{v:.0f} ms") if name.endswith("_ms") else (
-            lambda v: "N/A" if v is None else f"{v * 100:.1f}%")
+        fmt = (
+            (lambda v: "N/A" if v is None else f"{v:.0f} ms")
+            if name.endswith("_ms")
+            else (lambda v: "N/A" if v is None else f"{v * 100:.1f}%")
+        )
         threshold = f"{rule['op']} {rule['value']}" if rule else "-"
-        lines.append(f"| {name} | {fmt(value)} | {fmt(stats['min'])} | {fmt(stats['max'])} | {threshold} | {status} |")
+        lines.append(
+            f"| {name} | {fmt(value)} | {fmt(stats['min'])} | {fmt(stats['max'])} | {threshold} | {status} |"
+        )
 
     lines += ["", "## Failed Cases", ""]
     lines += [f"- **{f['case_id']}**: {f['reason']}" for f in result.failed_cases] or ["None."]
     return "\n".join(lines) + "\n"
 
 
-def write_json_report(result: EvaluationRunResult, artifacts_dir: Path | str, dataset_label: str) -> Path:
+def write_json_report(
+    result: EvaluationRunResult, artifacts_dir: Path | str, dataset_label: str
+) -> Path:
     """Write the run's JSON payload to <artifacts_dir>/evaluations/ and return its path.
 
     Evaluation output is data, not documentation: it never goes under docs/.
@@ -93,6 +126,8 @@ def write_json_report(result: EvaluationRunResult, artifacts_dir: Path | str, da
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"eval_{dataset_label}_{timestamp}.json"
     payload = to_json_dict(result, timestamp, dataset_label)
-    path.write_text(json.dumps(payload, indent=2, default=str, ensure_ascii=False), encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, default=str, ensure_ascii=False), encoding="utf-8"
+    )
     logger.info("Wrote evaluation JSON to %s", path)
     return path

@@ -18,7 +18,15 @@ async def config() -> ConfigResponse:
         retrieval_top_k=settings.retrieval_top_k,
         supported_languages=["en", "es"],
         endpoints=[
-            "/health", "/ask", "/report", "/report/stream", "/reports", "/reports/{incident_id}",
-            "/evaluate", "/evaluations/latest", "/metrics", "/config",
+            "/health",
+            "/ask",
+            "/report",
+            "/report/stream",
+            "/reports",
+            "/reports/{incident_id}",
+            "/evaluate",
+            "/evaluations/latest",
+            "/metrics",
+            "/config",
         ],
     )

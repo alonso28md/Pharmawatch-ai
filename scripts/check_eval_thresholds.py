@@ -20,15 +20,19 @@ def check(report: dict) -> list[str]:
         value = report["metrics"].get(name)
         ok = meets_threshold(name, value)
         status = "N/A" if ok is None else ("PASS" if ok else "FAIL")
-        print(f"{status:4}  {name:36} {value!s:>10}  ({rule['op']} {rule['value']}{'' if rule['gate'] else ', info'})")
+        print(
+            f"{status:4}  {name:36} {value!s:>10}  ({rule['op']} {rule['value']}{'' if rule['gate'] else ', info'})"
+        )
         if rule["gate"] and ok is not True:
             failures.append(name)
     return failures
 
 
 def main() -> None:
-    path = Path(sys.argv[1]) if len(sys.argv) > 1 else max(
-        Path("artifacts/evaluations").glob("*.json"), key=lambda p: p.stat().st_mtime
+    path = (
+        Path(sys.argv[1])
+        if len(sys.argv) > 1
+        else max(Path("artifacts/evaluations").glob("*.json"), key=lambda p: p.stat().st_mtime)
     )
     failures = check(json.loads(path.read_text(encoding="utf-8")))
     if failures:

@@ -67,8 +67,15 @@ def load_dataset(
     excluded = [] if include_unreviewed else [c.id for c in cases if c.needs_expert_review]
     cases = [c for c in cases if c.id not in excluded]
 
-    logger.info("Loaded %d case(s) from %s (%d excluded pending expert review)", len(cases), path, len(excluded))
-    return GoldenDataset(cases=cases, version=str(raw.get("version", "1")), excluded_for_review=excluded)
+    logger.info(
+        "Loaded %d case(s) from %s (%d excluded pending expert review)",
+        len(cases),
+        path,
+        len(excluded),
+    )
+    return GoldenDataset(
+        cases=cases, version=str(raw.get("version", "1")), excluded_for_review=excluded
+    )
 
 
 def load_golden_dataset(path: Path | str, categories: list[str] | None = None) -> list[GoldenCase]:

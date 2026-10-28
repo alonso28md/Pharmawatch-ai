@@ -16,7 +16,9 @@ REGULATIONS_DIR = PROJECT_ROOT / "data" / "regulations"
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--live", action="store_true", default=False,
+        "--live",
+        action="store_true",
+        default=False,
         help="Run tests marked `live` (real, paid model calls). Requires an API key in the config.",
     )
 
@@ -33,7 +35,9 @@ def pytest_collection_modifyitems(config, items):
     get_settings.cache_clear()
     if config.getoption("--live") and has_key:
         return
-    reason = "live test: pass --live" if has_key else "live test: no ANTHROPIC_API_KEY in configuration"
+    reason = (
+        "live test: pass --live" if has_key else "live test: no ANTHROPIC_API_KEY in configuration"
+    )
     for item in items:
         if "live" in item.keywords:
             item.add_marker(pytest.mark.skip(reason=reason))

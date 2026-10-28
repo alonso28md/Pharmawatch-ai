@@ -28,8 +28,11 @@ def test_b01_contradictory_description_escalates():
 
 def test_b02_pacemaker_cardiac_arrest_gets_10_days():
     llm = ScriptedLLM(
-        extract=extraction(device="implanted cardiac pacemaker", device_type="pacemaker",
-                           outcome="cardiac arrest, resuscitated, transferred to ICU"),
+        extract=extraction(
+            device="implanted cardiac pacemaker",
+            device_type="pacemaker",
+            outcome="cardiac arrest, resuscitated, transferred to ICU",
+        ),
         assess=assessment("unanticipated_serious_deterioration", confidence=0.97),
     )
     final = run_incident_classification(
@@ -58,8 +61,12 @@ def test_b02_deceased_outcome_gets_10_days():
 
 def test_b03_unknown_outcome_escalates_instead_of_not_reportable():
     llm = ScriptedLLM(
-        extract=extraction(device="monitor", outcome="unknown; nurse unsure whether any patient was affected",
-                           known=False, event="possible malfunction"),
+        extract=extraction(
+            device="monitor",
+            outcome="unknown; nurse unsure whether any patient was affected",
+            known=False,
+            event="possible malfunction",
+        ),
         assess=assessment("non_serious", confidence=0.7),
     )
     final = run_incident_classification(
@@ -118,7 +125,9 @@ async def test_b07_evaluate_rejects_arbitrary_dataset_path(api_client, monkeypat
     # the harness at any file on disk and overwrite the tracked docs/ reports.
     monkeypatch.setenv("API_KEY", "test-key")
     get_settings.cache_clear()
-    docs_before = {p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()}
+    docs_before = {
+        p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()
+    }
 
     dataset = tmp_path / "outside.json"
     dataset.write_text(json.dumps({"cases": []}), encoding="utf-8")
@@ -127,4 +136,6 @@ async def test_b07_evaluate_rejects_arbitrary_dataset_path(api_client, monkeypat
     )
 
     assert response.status_code == 422
-    assert {p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()} == docs_before
+    assert {
+        p: p.stat().st_mtime_ns for p in (PROJECT_ROOT / "docs").rglob("*") if p.is_file()
+    } == docs_before

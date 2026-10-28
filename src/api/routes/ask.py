@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/ask", response_model=AskResponse, tags=["rag"], dependencies=[Depends(verify_api_key)])
+@router.post(
+    "/ask", response_model=AskResponse, tags=["rag"], dependencies=[Depends(verify_api_key)]
+)
 @limiter.limit(lambda: f"{get_settings().rate_limit_per_minute}/minute")
 async def ask(
     request: Request,
@@ -40,8 +42,11 @@ async def ask(
         answer=result.answer,
         sources=[
             Source(
-                document=s.document, section=s.section, text=s.text,
-                relevance_score=s.relevance_score, chunk_id=s.chunk_id or None,
+                document=s.document,
+                section=s.section,
+                text=s.text,
+                relevance_score=s.relevance_score,
+                chunk_id=s.chunk_id or None,
             )
             for s in result.sources
         ],

@@ -59,7 +59,9 @@ class LLMClient(Protocol):
 
     def complete_text(self, system: str, user: str, max_tokens: int = 4096) -> str: ...
 
-    def complete_json(self, system: str, user: str, schema: dict, max_tokens: int = 4096) -> dict: ...
+    def complete_json(
+        self, system: str, user: str, schema: dict, max_tokens: int = 4096
+    ) -> dict: ...
 
     def last_usage(self) -> dict[str, int]:
         """Tokens of the most recent call made by the current thread."""

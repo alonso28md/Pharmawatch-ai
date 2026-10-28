@@ -11,7 +11,9 @@ TEXT = "The pacemaker stopped pacing; the patient had a cardiac arrest and was a
 
 def _llm(review_response, category="unanticipated_serious_deterioration", confidence=0.93):
     return ScriptedLLM(
-        extract=extraction(device="pacemaker", device_type="pacemaker", outcome="cardiac arrest, ICU"),
+        extract=extraction(
+            device="pacemaker", device_type="pacemaker", outcome="cardiac arrest, ICU"
+        ),
         assess=assessment(category, confidence=confidence),
         review=review_response,
     )
@@ -28,10 +30,19 @@ def test_agree_keeps_the_determination():
 
 @pytest.mark.parametrize("verdict", ["disagree", "uncertain"])
 def test_disagree_or_uncertain_escalates_without_overriding(verdict):
-    evidence = [{"chunk_id": REGULATORY_CHUNK["chunk_id"], "quote": "not later than 10 days"},
-                {"chunk_id": "invented::chunk", "quote": "made up"}]
-    llm = _llm(review(verdict, issues=["deadline should be 15"], category="other_serious", deadline=15,
-                      evidence=evidence))
+    evidence = [
+        {"chunk_id": REGULATORY_CHUNK["chunk_id"], "quote": "not later than 10 days"},
+        {"chunk_id": "invented::chunk", "quote": "made up"},
+    ]
+    llm = _llm(
+        review(
+            verdict,
+            issues=["deadline should be 15"],
+            category="other_serious",
+            deadline=15,
+            evidence=evidence,
+        )
+    )
     final = run_incident_classification(TEXT, deps=deps_for(llm, reviewer=True))
 
     assert final["escalation_level"] == "blocking"
@@ -74,7 +85,9 @@ def test_reviewer_is_skipped_when_disabled_or_already_blocked():
 def test_separate_reviewer_model_is_used_and_metered():
     principal = _llm(None)
     reviewer = ScriptedLLM(review=review("agree"))
-    final = run_incident_classification(TEXT, deps=deps_for(principal, reviewer=True, reviewer_llm=reviewer))
+    final = run_incident_classification(
+        TEXT, deps=deps_for(principal, reviewer=True, reviewer_llm=reviewer)
+    )
     assert "review" not in principal.stages() and reviewer.stages() == ["review"]
     assert final["review"]["usage"] == {"input_tokens": 10, "output_tokens": 5}
     assert final["review"]["latency_ms"] >= 0

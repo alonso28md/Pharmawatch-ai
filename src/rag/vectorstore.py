@@ -26,7 +26,9 @@ class VectorStore:
         """Open the collection. `for_reindex=True` drops any existing collection (whatever
         model built it) so scripts/ingest_documents.py can rebuild it from scratch."""
         settings = get_settings()
-        self._persist_dir = Path(persist_dir) if persist_dir else settings.chroma_persist_dir_absolute
+        self._persist_dir = (
+            Path(persist_dir) if persist_dir else settings.chroma_persist_dir_absolute
+        )
         self._persist_dir.mkdir(parents=True, exist_ok=True)
 
         self._model = settings.embedding_model
@@ -43,7 +45,9 @@ class VectorStore:
     def _check_indexed_model(self) -> None:
         """Refuse an index built with another embedding model (same vector size, different
         space: queries would silently return garbage)."""
-        if COLLECTION_NAME not in {c.name if hasattr(c, "name") else c for c in self._client.list_collections()}:
+        if COLLECTION_NAME not in {
+            c.name if hasattr(c, "name") else c for c in self._client.list_collections()
+        }:
             return
         existing = self._client.get_collection(COLLECTION_NAME)
         indexed_with = (existing.metadata or {}).get("embedding_model", LEGACY_EMBEDDING_MODEL)

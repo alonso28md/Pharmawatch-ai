@@ -32,7 +32,9 @@ def _rescore(result: dict) -> dict:
     result = {k: v for k, v in result.items() if k not in ("scores", "passed", "failure_reason")}
     if "answer" in result:
         if not result.get("context"):
-            result["context"] = [{"label": f"C{i}"} for i in range(1, len(result.get("sources", [])) + 1)]
+            result["context"] = [
+                {"label": f"C{i}"} for i in range(1, len(result.get("sources", [])) + 1)
+            ]
         return score_rag_case(result)
     return score_classification_case(result)
 
@@ -69,7 +71,11 @@ def rescore(report: dict) -> dict:
         },
         "metrics": {name: s["mean"] for name, s in summary.items()},
         "metric_summary": {
-            name: {**s, "threshold": thresholds.get(name), "meets_threshold": meets_threshold(name, s["mean"])}
+            name: {
+                **s,
+                "threshold": thresholds.get(name),
+                "meets_threshold": meets_threshold(name, s["mean"]),
+            }
             for name, s in summary.items()
         },
         "results": scored,

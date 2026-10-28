@@ -83,11 +83,21 @@ class Repository:
         """Insert one query log row and return its id."""
         with self._session_factory() as session:
             record = QueryLog(
-                endpoint=endpoint, input_text=input_text, output_summary=output_summary,
-                severity=severity, device_class=device_class, reportable=reportable,
-                confidence=confidence, escalated=escalated, latency_ms=latency_ms, error=error,
-                method=method, status_code=status_code, source=source,
-                escalation_level=escalation_level, input_length=input_length,
+                endpoint=endpoint,
+                input_text=input_text,
+                output_summary=output_summary,
+                severity=severity,
+                device_class=device_class,
+                reportable=reportable,
+                confidence=confidence,
+                escalated=escalated,
+                latency_ms=latency_ms,
+                error=error,
+                method=method,
+                status_code=status_code,
+                source=source,
+                escalation_level=escalation_level,
+                input_length=input_length,
                 input_sha256=input_sha256,
             )
             session.add(record)
@@ -103,7 +113,9 @@ class Repository:
             if not include_demo:
                 statement = statement.where(QueryLog.source != "demo")
             if since is not None:
-                statement = statement.where(QueryLog.timestamp >= since.astimezone(UTC).replace(tzinfo=None))
+                statement = statement.where(
+                    QueryLog.timestamp >= since.astimezone(UTC).replace(tzinfo=None)
+                )
             if limit is not None:
                 statement = statement.limit(limit)
             return list(session.scalars(statement))
@@ -156,13 +168,20 @@ class Repository:
         if until:
             conditions.append(Incident.created_at < until.astimezone(UTC).replace(tzinfo=None))
         with self._session_factory() as session:
-            total = session.scalar(select(func.count()).select_from(Incident).where(*conditions)) or 0
+            total = (
+                session.scalar(select(func.count()).select_from(Incident).where(*conditions)) or 0
+            )
             rows = session.scalars(
-                select(Incident).where(*conditions)
+                select(Incident)
+                .where(*conditions)
                 .order_by(Incident.created_at.desc(), Incident.incident_id.desc())
-                .limit(limit).offset(offset)
+                .limit(limit)
+                .offset(offset)
             ).all()
-            items = [{**json.loads(r.result_json), "created_at": r.created_at.replace(tzinfo=UTC)} for r in rows]
+            items = [
+                {**json.loads(r.result_json), "created_at": r.created_at.replace(tzinfo=UTC)}
+                for r in rows
+            ]
         return items, total
 
     def get_incident(self, incident_id: str) -> dict | None:
@@ -173,13 +192,21 @@ class Repository:
     # --- evaluation runs (legacy) ---------------------------------------------------------
 
     def log_evaluation_run(
-        self, total_cases: int, passed: int, failed: int, metrics_json: str, report_path: str | None = None
+        self,
+        total_cases: int,
+        passed: int,
+        failed: int,
+        metrics_json: str,
+        report_path: str | None = None,
     ) -> int:
         """Insert one evaluation-run row and return its id."""
         with self._session_factory() as session:
             record = EvaluationRun(
-                total_cases=total_cases, passed=passed, failed=failed,
-                metrics_json=metrics_json, report_path=report_path,
+                total_cases=total_cases,
+                passed=passed,
+                failed=failed,
+                metrics_json=metrics_json,
+                report_path=report_path,
             )
             session.add(record)
             session.commit()

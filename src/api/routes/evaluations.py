@@ -14,7 +14,9 @@ from src.config import get_settings
 router = APIRouter()
 
 # eval_<label>_<YYYYmmddTHHMMSSZ>[_rescored].json, as written by the reporter / rescore script.
-_NAME = re.compile(r"^eval_(?P<label>[a-z0-9_-]+?)_(?P<ts>\d{8}T\d{6}Z)(?P<rescored>_rescored)?\.json$")
+_NAME = re.compile(
+    r"^eval_(?P<label>[a-z0-9_-]+?)_(?P<ts>\d{8}T\d{6}Z)(?P<rescored>_rescored)?\.json$"
+)
 
 
 def _pick_latest(directory: Path, label: str | None) -> Path | None:
@@ -46,7 +48,9 @@ def _load(label: str | None) -> EvaluationLatest | None:
 
 @router.get("/evaluations/latest", response_model=EvaluationLatest, tags=["evaluation"])
 async def latest_evaluation(
-    dataset: str | None = Query(None, pattern=r"^[a-z0-9_-]{1,40}$", description="Dataset label, e.g. v2"),
+    dataset: str | None = Query(
+        None, pattern=r"^[a-z0-9_-]{1,40}$", description="Dataset label, e.g. v2"
+    ),
 ) -> EvaluationLatest:
     """Metrics of the latest stored evaluation run, with thresholds and min/max over repetitions.
 

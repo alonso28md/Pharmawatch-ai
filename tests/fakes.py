@@ -19,12 +19,23 @@ class ScriptedLLM:
     (consumed in order). Every call is recorded in `calls` as (stage, system, user).
     """
 
-    def __init__(self, extract=None, assess=None, draft=None, review=None, text="stub answer", delay=0.0):
-        self.responses = {"extract": extract, "assess": assess, "review": review, "draft": draft or {
-            "incident_date": None, "reporter_type": "healthcare_professional",
-            "device_identification": "device", "event_description": "summary",
-            "patient_outcome": "outcome", "corrective_action": "Pending investigation",
-        }}
+    def __init__(
+        self, extract=None, assess=None, draft=None, review=None, text="stub answer", delay=0.0
+    ):
+        self.responses = {
+            "extract": extract,
+            "assess": assess,
+            "review": review,
+            "draft": draft
+            or {
+                "incident_date": None,
+                "reporter_type": "healthcare_professional",
+                "device_identification": "device",
+                "event_description": "summary",
+                "patient_outcome": "outcome",
+                "corrective_action": "Pending investigation",
+            },
+        }
         self.text = text
         self.delay = delay
         self.calls: list[tuple[str, str, str]] = []
@@ -74,31 +85,49 @@ class ScriptedLLM:
         return [stage for stage, _, _ in self.calls]
 
 
-def extraction(device="infusion pump", outcome="patient hospitalized", known=True,
-               device_class=None, device_type=None, event="malfunction") -> dict:
+def extraction(
+    device="infusion pump",
+    outcome="patient hospitalized",
+    known=True,
+    device_class=None,
+    device_type=None,
+    event="malfunction",
+) -> dict:
     return {
-        "device_name": device, "device_type": device_type, "device_class_stated": device_class,
-        "event_type": event, "patient_outcome": outcome, "outcome_known": known,
+        "device_name": device,
+        "device_type": device_type,
+        "device_class_stated": device_class,
+        "event_type": event,
+        "patient_outcome": outcome,
+        "outcome_known": known,
     }
 
 
-def assessment(category="other_serious", confidence=0.9, alternative=None,
-               reasoning="Art. 2(65) applies.") -> dict:
+def assessment(
+    category="other_serious", confidence=0.9, alternative=None, reasoning="Art. 2(65) applies."
+) -> dict:
     return {
-        "category": category, "alternative_category": alternative,
-        "confidence": confidence, "reasoning": reasoning,
+        "category": category,
+        "alternative_category": alternative,
+        "confidence": confidence,
+        "reasoning": reasoning,
     }
 
 
 def review(verdict="agree", issues=(), category=None, deadline=None, evidence=()) -> dict:
     return {
-        "verdict": verdict, "issues": list(issues), "suggested_category": category,
-        "suggested_deadline_days": deadline, "evidence": list(evidence),
+        "verdict": verdict,
+        "issues": list(issues),
+        "suggested_category": category,
+        "suggested_deadline_days": deadline,
+        "evidence": list(evidence),
     }
 
 
 def deps_for(llm: ScriptedLLM, reviewer: bool = False, reviewer_llm=None) -> AgentDeps:
     return AgentDeps(
-        llm=llm, regulatory_context=lambda: [REGULATORY_CHUNK],
-        reviewer_enabled=reviewer, reviewer_llm=reviewer_llm,
+        llm=llm,
+        regulatory_context=lambda: [REGULATORY_CHUNK],
+        reviewer_enabled=reviewer,
+        reviewer_llm=reviewer_llm,
     )

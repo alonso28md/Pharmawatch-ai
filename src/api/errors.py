@@ -81,7 +81,9 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RateLimitExceeded)
     async def _rate_limited(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-        return error_response(request, 429, "rate_limited", "Rate limit exceeded. Please slow down.")
+        return error_response(
+            request, 429, "rate_limited", "Rate limit exceeded. Please slow down."
+        )
 
     @app.exception_handler(LLMUnavailableError)
     async def _llm_unavailable(request: Request, exc: LLMUnavailableError) -> JSONResponse:

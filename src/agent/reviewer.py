@@ -78,14 +78,22 @@ def review(state: IncidentState, deps: AgentDeps) -> dict:
     start = time.perf_counter()
     try:
         result = llm.complete_json(REVIEWER_SYSTEM, user, REVIEW_SCHEMA)
-        verdict = result.get("verdict") if result.get("verdict") in ("agree", "disagree", "uncertain") else "uncertain"
+        verdict = (
+            result.get("verdict")
+            if result.get("verdict") in ("agree", "disagree", "uncertain")
+            else "uncertain"
+        )
     except LLMOutputError as exc:
         errors.append(f"review: model output could not be parsed ({exc})")
         result, verdict = {}, "uncertain"
     latency_ms = round((time.perf_counter() - start) * 1000, 1)
 
     valid_ids = {c["chunk_id"] for c in context}
-    evidence = [e for e in result.get("evidence", []) if isinstance(e, dict) and e.get("chunk_id") in valid_ids]
+    evidence = [
+        e
+        for e in result.get("evidence", [])
+        if isinstance(e, dict) and e.get("chunk_id") in valid_ids
+    ]
     record = {
         "verdict": verdict,
         "issues": [str(i) for i in result.get("issues", [])],
@@ -105,5 +113,9 @@ def review(state: IncidentState, deps: AgentDeps) -> dict:
             f"Independent review {verdict}: {issues}. The proposed determination is withheld "
             "for a specialist (see review)."
         )
-    return {"review": record, "blocking_reasons": blocking, "errors": errors,
-            "processing_steps": _steps(state, "review")}
+    return {
+        "review": record,
+        "blocking_reasons": blocking,
+        "errors": errors,
+        "processing_steps": _steps(state, "review"),
+    }

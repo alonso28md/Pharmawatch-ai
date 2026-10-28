@@ -35,7 +35,9 @@ def _generate_incident_id() -> str:
     return f"INC-{year}-{uuid.uuid4().hex[:8].upper()}"
 
 
-def build_report_response(incident_id: str, final_state: dict, processing_time_ms: int) -> ReportResponse:
+def build_report_response(
+    incident_id: str, final_state: dict, processing_time_ms: int
+) -> ReportResponse:
     return ReportResponse(
         incident_id=incident_id,
         severity=final_state.get("severity"),
@@ -53,7 +55,12 @@ def build_report_response(incident_id: str, final_state: dict, processing_time_m
         escalation_level=final_state.get("escalation_level", "none"),
         escalation_reason=final_state.get("escalation_reason"),
         rag_sources=[
-            Source(document=s["document"], section=s["section"], text=s["text"], chunk_id=s.get("chunk_id"))
+            Source(
+                document=s["document"],
+                section=s["section"],
+                text=s["text"],
+                chunk_id=s.get("chunk_id"),
+            )
             for s in (final_state.get("rag_sources") or [])
         ],
         draft_notification=final_state.get("draft_notification"),
@@ -76,7 +83,11 @@ def _flag_possible_injection(final_state: dict) -> dict:
 def _prepare(payload: ReportRequest, request_log: RequestLog) -> tuple[str, str | None, bool]:
     """Sanitize inputs; returns (description, device_name, injection_suspected)."""
     sanitized = sanitize_user_text(payload.description, field_name="description")
-    device = sanitize_user_text(payload.device_name, field_name="device_name") if payload.device_name else None
+    device = (
+        sanitize_user_text(payload.device_name, field_name="device_name")
+        if payload.device_name
+        else None
+    )
     request_log.input_text = sanitized.text[:500]
     suspected = sanitized.injection_suspected or bool(device and device.injection_suspected)
     return sanitized.text, (device.text if device else None) or None, suspected
@@ -100,11 +111,15 @@ async def _finish(
     )
 
     response = build_report_response(_generate_incident_id(), final_state, processing_time_ms)
-    await asyncio.to_thread(get_repository().save_incident, response.incident_id, response.model_dump())
+    await asyncio.to_thread(
+        get_repository().save_incident, response.incident_id, response.model_dump()
+    )
     return response
 
 
-@router.post("/report", response_model=ReportResponse, tags=["agent"], dependencies=[Depends(verify_api_key)])
+@router.post(
+    "/report", response_model=ReportResponse, tags=["agent"], dependencies=[Depends(verify_api_key)]
+)
 @limiter.limit(lambda: f"{get_settings().rate_limit_per_minute}/minute")
 async def report(
     request: Request,
@@ -123,7 +138,9 @@ async def report(
     final_state = await asyncio.to_thread(
         classify, description, device_name_hint=device_name, device_class_hint=payload.device_class
     )
-    return await _finish(final_state, suspected, int((time.perf_counter() - start) * 1000), request_log)
+    return await _finish(
+        final_state, suspected, int((time.perf_counter() - start) * 1000), request_log
+    )
 
 
 def _sse(event: str, data: dict) -> str:
@@ -157,24 +174,34 @@ async def report_stream(
         index = 0
         try:
             async for kind, value in iterate_in_threadpool(
-                stream_classify(description, device_name_hint=device_name, device_class_hint=payload.device_class)
+                stream_classify(
+                    description,
+                    device_name_hint=device_name,
+                    device_class_hint=payload.device_class,
+                )
             ):
                 if kind == "step":
                     index += 1
                     yield _sse("step", {"node": value, "index": index})
                 else:
-                    response = await _finish(value, suspected, int((time.perf_counter() - start) * 1000), request_log)
+                    response = await _finish(
+                        value, suspected, int((time.perf_counter() - start) * 1000), request_log
+                    )
                     yield _sse("result", response.model_dump())
         except (LLMUnavailableError, LLMOutputError) as exc:
             code = "llm_unavailable" if isinstance(exc, LLMUnavailableError) else "llm_bad_output"
             logger.warning("Streamed /report failed: %s", exc)
             request_log.error = code
-            yield _sse("error", {"code": code, "message": "The language model is temporarily unavailable"})
+            yield _sse(
+                "error", {"code": code, "message": "The language model is temporarily unavailable"}
+            )
         except Exception:
             logger.exception("Streamed /report failed")
             request_log.error = "internal_error"
             yield _sse("error", {"code": "internal_error", "message": "Internal server error"})
 
     return StreamingResponse(
-        events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

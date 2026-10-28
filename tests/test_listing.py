@@ -11,13 +11,23 @@ from src.config import get_settings
 
 def _result(category: str, severity: str | None, level: str, deadline: int | None) -> dict:
     return {
-        "severity": severity, "severity_confidence": 0.9, "severity_reasoning": "x",
-        "incident_category": category, "reportable": deadline is not None if level != "blocking" else None,
-        "report_to": ["competent_authority"] if deadline else [], "deadline_days": deadline,
-        "deadline_rule": None, "device_class": "IIb", "device_class_source": "caller",
-        "classification_rule": "Provided by caller", "escalated_to_human": level != "none",
-        "escalation_level": level, "escalation_reason": None, "rag_sources": [],
-        "draft_notification": None, "processing_time_ms": 10,
+        "severity": severity,
+        "severity_confidence": 0.9,
+        "severity_reasoning": "x",
+        "incident_category": category,
+        "reportable": deadline is not None if level != "blocking" else None,
+        "report_to": ["competent_authority"] if deadline else [],
+        "deadline_days": deadline,
+        "deadline_rule": None,
+        "device_class": "IIb",
+        "device_class_source": "caller",
+        "classification_rule": "Provided by caller",
+        "escalated_to_human": level != "none",
+        "escalation_level": level,
+        "escalation_reason": None,
+        "rag_sources": [],
+        "draft_notification": None,
+        "processing_time_ms": 10,
     }
 
 
@@ -62,7 +72,9 @@ async def test_reports_date_filter_and_validation(api_client, stored):
     today = datetime.now(UTC).date()
     assert (await api_client.get("/reports", params={"date_from": str(today)})).json()["total"] == 4
     tomorrow = today + timedelta(days=1)
-    assert (await api_client.get("/reports", params={"date_from": str(tomorrow)})).json()["total"] == 0
+    assert (await api_client.get("/reports", params={"date_from": str(tomorrow)})).json()[
+        "total"
+    ] == 0
     for bad in ({"limit": 0}, {"limit": 500}, {"severity": "fatal"}, {"escalation": "maybe"}):
         assert (await api_client.get("/reports", params=bad)).status_code == 422
 
@@ -76,17 +88,28 @@ async def test_reports_list_requires_auth_like_report(api_client, monkeypatch):
 def _write_eval(directory, name, total, mean):
     directory.mkdir(parents=True, exist_ok=True)
     payload = {
-        "timestamp": name, "metadata": {"timestamp": "2026-10-27T21:43:19Z", "model": "m", "repetitions": 3},
-        "summary": {"total_cases": total}, "failed_cases": [{"case_id": "c", "reason": "r"}],
-        "metric_summary": {"deadline_accuracy": {"mean": mean, "min": mean, "max": mean, "n": 3,
-                                                  "threshold": {"op": ">=", "value": 0.85, "gate": True},
-                                                  "meets_threshold": False}},
+        "timestamp": name,
+        "metadata": {"timestamp": "2026-10-27T21:43:19Z", "model": "m", "repetitions": 3},
+        "summary": {"total_cases": total},
+        "failed_cases": [{"case_id": "c", "reason": "r"}],
+        "metric_summary": {
+            "deadline_accuracy": {
+                "mean": mean,
+                "min": mean,
+                "max": mean,
+                "n": 3,
+                "threshold": {"op": ">=", "value": 0.85, "gate": True},
+                "meets_threshold": False,
+            }
+        },
         "results": [{"huge": "per-case data"}],
     }
     (directory / name).write_text(json.dumps(payload), encoding="utf-8")
 
 
-async def test_latest_evaluation_prefers_newest_run_and_its_rescored_file(api_client, monkeypatch, tmp_path):
+async def test_latest_evaluation_prefers_newest_run_and_its_rescored_file(
+    api_client, monkeypatch, tmp_path
+):
     monkeypatch.setenv("ARTIFACTS_DIR", str(tmp_path))
     get_settings.cache_clear()
     directory = tmp_path / "evaluations"
@@ -107,4 +130,6 @@ async def test_latest_evaluation_404_and_no_path_injection(api_client, monkeypat
     monkeypatch.setenv("ARTIFACTS_DIR", str(tmp_path))
     get_settings.cache_clear()
     assert (await api_client.get("/evaluations/latest")).status_code == 404
-    assert (await api_client.get("/evaluations/latest", params={"dataset": "../x"})).status_code == 422
+    assert (
+        await api_client.get("/evaluations/latest", params={"dataset": "../x"})
+    ).status_code == 422

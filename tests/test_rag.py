@@ -94,7 +94,11 @@ def test_retriever_answer_cites_sources(tmp_path, regulatory_chunks):
 
 
 def test_every_annex_rule_gets_its_own_section_label(regulatory_chunks):
-    annex = [c for c in regulatory_chunks if c["metadata"]["source_file"] == "mdr_annex_classification_rules.txt"]
+    annex = [
+        c
+        for c in regulatory_chunks
+        if c["metadata"]["source_file"] == "mdr_annex_classification_rules.txt"
+    ]
     labels = {c["metadata"]["section"] for c in annex}
     assert {f"Rule {n}" for n in range(1, 23)} <= labels
 
@@ -102,16 +106,23 @@ def test_every_annex_rule_gets_its_own_section_label(regulatory_chunks):
 def test_wrapped_body_lines_do_not_become_sections(regulatory_chunks):
     labels = {c["metadata"]["section"] for c in regulatory_chunks}
     bogus = [
-        label for label in labels
+        label
+        for label in labels
         if label.startswith(("Article 87(1)", "Article 92,", "Article 84.", "Rule 3.5"))
     ]
     assert bogus == []
     vigilance = {
-        c["metadata"]["section"] for c in regulatory_chunks
+        c["metadata"]["section"]
+        for c in regulatory_chunks
         if c["metadata"]["source_file"] == "mdr_vigilance_articles.txt"
     }
     assert {label.split(" —")[0] for label in vigilance} == {
-        "Header", "Article 2", "Article 87", "Article 88", "Article 89", "Article 92",
+        "Header",
+        "Article 2",
+        "Article 87",
+        "Article 88",
+        "Article 89",
+        "Article 92",
     }
 
 
@@ -121,12 +132,16 @@ def test_retriever_answer_with_scripted_llm(populated_vectorstore):
 
     llm = ScriptedLLM(text="Within 15 days [C1][C2], see also [C9].")
     retriever = RagRetriever(vectorstore=populated_vectorstore, llm=llm)
-    result = retriever.answer("What is the reporting deadline for a serious incident?", language="es")
+    result = retriever.answer(
+        "What is the reporting deadline for a serious incident?", language="es"
+    )
 
     _, system, user = llm.calls[0]
     assert "[C1]" in user and "ANSWER LANGUAGE: Spanish" in user
     assert "untrusted user input" in system
-    assert [c["label"] for c in result.context] == [f"C{i}" for i in range(1, len(result.context) + 1)]
+    assert [c["label"] for c in result.context] == [
+        f"C{i}" for i in range(1, len(result.context) + 1)
+    ]
     assert result.cited_labels == ["C1", "C2", "C9"]
     assert all(len(c["text"]) > 400 or c["text"] for c in result.context)
     assert 0.0 <= result.retrieval_score <= 1.0
@@ -153,12 +168,18 @@ def test_index_built_with_another_embedding_model_is_refused(tmp_path):
 @pytest.mark.parametrize(
     ("question", "expected_document"),
     [
-        ("¿Cuál es el plazo máximo para notificar un incidente grave según el MDR?",
-         "MDR 2017/745 (Articles 87-92, Vigilance)"),
-        ("¿Cómo se clasifica un desfibrilador externo automático?",
-         "MDR 2017/745 Annex VIII (Classification Rules)"),
-        ("Through which channel are incidents reported to the Spanish agency?",
-         "AEMPS - Guía de vigilancia de productos sanitarios"),
+        (
+            "¿Cuál es el plazo máximo para notificar un incidente grave según el MDR?",
+            "MDR 2017/745 (Articles 87-92, Vigilance)",
+        ),
+        (
+            "¿Cómo se clasifica un desfibrilador externo automático?",
+            "MDR 2017/745 Annex VIII (Classification Rules)",
+        ),
+        (
+            "Through which channel are incidents reported to the Spanish agency?",
+            "AEMPS - Guía de vigilancia de productos sanitarios",
+        ),
     ],
 )
 def test_cross_language_retrieval(populated_vectorstore, question, expected_document):
@@ -179,5 +200,13 @@ def test_reindex_mode_replaces_a_legacy_index(tmp_path):
 
     store = VectorStore(persist_dir=tmp_path, for_reindex=True)
     assert store.count() == 0
-    store.add_documents([{"id": "x", "text": "Article 87 deadline 15 days", "metadata": {"source": "s", "section": "Article 87"}}])
+    store.add_documents(
+        [
+            {
+                "id": "x",
+                "text": "Article 87 deadline 15 days",
+                "metadata": {"source": "s", "section": "Article 87"},
+            }
+        ]
+    )
     assert VectorStore(persist_dir=tmp_path).count() == 1  # now opens without complaint

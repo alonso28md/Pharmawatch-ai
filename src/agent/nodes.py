@@ -97,7 +97,9 @@ def extract_info(state: IncidentState, deps: AgentDeps) -> dict:
     """Extract device, event and patient-outcome facts from the free-text description."""
     errors = list(state.get("errors", []))
     try:
-        extracted = deps.llm.complete_json(EXTRACTION_SYSTEM, _description_block(state), EXTRACTION_SCHEMA)
+        extracted = deps.llm.complete_json(
+            EXTRACTION_SYSTEM, _description_block(state), EXTRACTION_SCHEMA
+        )
     except LLMOutputError as exc:
         errors.append(f"extract_info: model output could not be parsed ({exc})")
         extracted = {}
@@ -240,8 +242,12 @@ def assess_severity(state: IncidentState, deps: AgentDeps) -> dict:
         "severity_confidence": None if confidence is None else round(confidence, 4),
         "severity_reasoning": assessment.get("reasoning"),
         "rag_sources": [
-            {"chunk_id": c["chunk_id"], "document": c["document"], "section": c["section"],
-             "text": c["text"][:400]}
+            {
+                "chunk_id": c["chunk_id"],
+                "document": c["document"],
+                "section": c["section"],
+                "text": c["text"][:400],
+            }
             for c in context
         ],
         "processing_steps": _steps(state, "assess_severity"),
@@ -336,10 +342,16 @@ def finalize(state: IncidentState, deps: AgentDeps) -> dict:
     if validation_errors:
         blocking.append("Output validation failed: " + "; ".join(validation_errors))
         update.update(
-            reportable=None, report_to=None, deadline_days=None, deadline_rule=None,
+            reportable=None,
+            report_to=None,
+            deadline_days=None,
+            deadline_rule=None,
             draft_notification=None,
         )
-        update["errors"] = [*state.get("errors", []), *(f"validate_output: {e}" for e in validation_errors)]
+        update["errors"] = [
+            *state.get("errors", []),
+            *(f"validate_output: {e}" for e in validation_errors),
+        ]
         level = "blocking"
 
     reasons = list(dict.fromkeys([*blocking, *advisory]))  # de-duplicated, order kept

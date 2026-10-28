@@ -59,7 +59,9 @@ def test_reporting_for_unknown_category_is_refused():
 
 
 def test_death_keeps_determination_but_flags_advisory_review():
-    llm = ScriptedLLM(extract=extraction(device_class="III", outcome="patient died"), assess=assessment("death"))
+    llm = ScriptedLLM(
+        extract=extraction(device_class="III", outcome="patient died"), assess=assessment("death")
+    )
     final = run(llm, "The ventilator stopped and the patient died.")
     assert final["deadline_days"] == 10
     assert final["escalation_level"] == "advisory"
@@ -67,15 +69,19 @@ def test_death_keeps_determination_but_flags_advisory_review():
 
 
 def test_death_in_outcome_with_non_death_category_escalates():
-    llm = ScriptedLLM(extract=extraction(outcome="patient deceased"), assess=assessment("other_serious"))
+    llm = ScriptedLLM(
+        extract=extraction(outcome="patient deceased"), assess=assessment("other_serious")
+    )
     final = run(llm, "The ventilator stopped; the patient was deceased when staff arrived.")
     assert final["escalation_level"] == "blocking"
     assert final["deadline_days"] is None
 
 
 def test_potential_incident_with_could_have_died_is_not_escalated_as_contradiction():
-    text = ("During the pre-use check the ventilator alarm failed silently. No patient was harmed, "
-            "but had it occurred during use the patient could have died.")
+    text = (
+        "During the pre-use check the ventilator alarm failed silently. No patient was harmed, "
+        "but had it occurred during use the patient could have died."
+    )
     llm = ScriptedLLM(
         extract=extraction(device="ventilator", outcome="no patient harmed", device_class="IIb"),
         assess=assessment("other_serious"),
@@ -110,14 +116,22 @@ def test_category_doubt_with_identical_obligations_does_not_escalate():
 
 def test_contradictory_signals_escalate_with_reason():
     llm = ScriptedLLM(extract=extraction(), assess=assessment("other_serious", confidence=0.95))
-    final = run(llm, "Pump delivered 10x the dose. The patient was not harmed but required ICU monitoring.")
+    final = run(
+        llm, "Pump delivered 10x the dose. The patient was not harmed but required ICU monitoring."
+    )
     assert final["escalation_level"] == "blocking"
     assert "contradictory" in final["escalation_reason"]
 
 
 @pytest.mark.parametrize(
     ("outcome", "known"),
-    [("unknown", False), ("not documented", False), ("", True), (None, True), ("patient unaffected?", False)],
+    [
+        ("unknown", False),
+        ("not documented", False),
+        ("", True),
+        (None, True),
+        ("patient unaffected?", False),
+    ],
 )
 def test_unknown_outcome_always_escalates_never_not_reportable(outcome, known):
     llm = ScriptedLLM(
@@ -131,14 +145,18 @@ def test_unknown_outcome_always_escalates_never_not_reportable(outcome, known):
 
 
 def test_high_confidence_does_not_override_explicit_criteria():
-    llm = ScriptedLLM(extract=extraction(device=None), assess=assessment("other_serious", confidence=0.99))
+    llm = ScriptedLLM(
+        extract=extraction(device=None), assess=assessment("other_serious", confidence=0.99)
+    )
     final = run(llm)
     assert final["escalation_level"] == "blocking"
     assert guardrails.REASON_MISSING_DEVICE in final["escalation_reason"]
 
 
 def test_low_confidence_alone_escalates():
-    llm = ScriptedLLM(extract=extraction(device_class="IIb"), assess=assessment("other_serious", confidence=0.5))
+    llm = ScriptedLLM(
+        extract=extraction(device_class="IIb"), assess=assessment("other_serious", confidence=0.5)
+    )
     final = run(llm)
     assert final["escalation_level"] == "blocking"
     assert final["escalation_reason"].startswith(guardrails.REASON_LOW_CONFIDENCE)
@@ -168,8 +186,11 @@ def test_unparseable_assessment_is_recorded_and_escalates():
 
 
 def test_unparseable_draft_keeps_determination_and_flags_it():
-    llm = ScriptedLLM(extract=extraction(device_class="IIb"), assess=assessment("other_serious"),
-                      draft=LLMOutputError("bad"))
+    llm = ScriptedLLM(
+        extract=extraction(device_class="IIb"),
+        assess=assessment("other_serious"),
+        draft=LLMOutputError("bad"),
+    )
     final = run(llm)
     assert final["deadline_days"] == 15
     assert final["draft_notification"] is None
@@ -207,7 +228,9 @@ def test_undetermined_device_class_is_advisory_not_class_i():
         extract=extraction(device="digital thermometer", outcome="no patient involved"),
         assess=assessment("non_serious"),
     )
-    final = run(llm, "A digital thermometer read 0.1 C off during calibration; no patient involved.")
+    final = run(
+        llm, "A digital thermometer read 0.1 C off during calibration; no patient involved."
+    )
     assert final["device_class"] is None
     assert guardrails.ADVISORY_DEVICE_CLASS in final["escalation_reason"]
     assert final["reportable"] is False
@@ -216,11 +239,11 @@ def test_undetermined_device_class_is_advisory_not_class_i():
 @pytest.mark.parametrize(
     ("device_text", "expected"),
     [
-        ("Paediatric ward thermometer", None),       # "aed" must not match inside a word
+        ("Paediatric ward thermometer", None),  # "aed" must not match inside a word
         ("silicone breast implant", "III"),
         ("automated external defibrillator (AED)", "III"),
-        ("volumetric infusion pump", "IIb"),        # Rule 12 corpus example (A2)
-        ("electrosurgical generator", "IIb"),       # Rule 9 corpus example (A2)
+        ("volumetric infusion pump", "IIb"),  # Rule 12 corpus example (A2)
+        ("electrosurgical generator", "IIb"),  # Rule 9 corpus example (A2)
         ("", None),
     ],
 )
@@ -230,7 +253,10 @@ def test_classification_rules_tool_matches_whole_words(device_text, expected):
 
 def test_classification_ignores_the_incident_narrative():
     """Only device name/type are matched: an outcome word like 'injured skin' must not classify."""
-    llm = ScriptedLLM(extract=extraction(device="nebulizer", outcome="injured skin"), assess=assessment("other_serious"))
+    llm = ScriptedLLM(
+        extract=extraction(device="nebulizer", outcome="injured skin"),
+        assess=assessment("other_serious"),
+    )
     final = run(llm, "Patient with an injured skin area; the nebulizer stopped working.")
     assert final["classification_rule"].startswith("Rule 20")
 
@@ -244,9 +270,16 @@ def test_classification_ignores_the_incident_narrative():
         ("Monitor screen flickered during surgery; patient unaffected.", [], False),
         ("Device emitted a burnt smell during setup; removed before patient use.", [], False),
         ("Prolonged boot time on the ventilator; patient not injured.", [], False),
-        ("The patient required ICU admission after the overdose.", ["serious_deterioration"], False),
-        ("Pump gave 10x the dose. Patient was not harmed but required ICU monitoring.",
-         ["serious_deterioration"], True),
+        (
+            "The patient required ICU admission after the overdose.",
+            ["serious_deterioration"],
+            False,
+        ),
+        (
+            "Pump gave 10x the dose. Patient was not harmed but required ICU monitoring.",
+            ["serious_deterioration"],
+            True,
+        ),
         ("The patient died after the pump failed.", ["death"], False),
         ("El paciente falleció tras el fallo de la bomba.", ["death"], False),
     ],
@@ -268,10 +301,19 @@ def test_graph_runs_validation_and_finalize_on_every_path():
 
 def test_validation_failure_blocks_the_determination():
     state = {
-        "severity": "non-serious", "incident_category": "death", "reportable": True,
-        "report_to": ["competent_authority"], "deadline_days": 10, "severity_reasoning": "x",
-        "blocking_reasons": [], "advisory_reasons": [], "errors": [], "processing_steps": [],
-        "device_class": "III", "event_type": None, "patient_outcome": "died",
+        "severity": "non-serious",
+        "incident_category": "death",
+        "reportable": True,
+        "report_to": ["competent_authority"],
+        "deadline_days": 10,
+        "severity_reasoning": "x",
+        "blocking_reasons": [],
+        "advisory_reasons": [],
+        "errors": [],
+        "processing_steps": [],
+        "device_class": "III",
+        "event_type": None,
+        "patient_outcome": "died",
     }
     update = finalize(state, deps=None)
     assert update["escalation_level"] == "blocking"
@@ -342,4 +384,9 @@ def test_severity_signal_detects_fragment_retrieval(text):
 
 
 def test_retrieval_of_data_is_not_a_deterioration_signal():
-    assert severity_signal("Data retrieval from the pump log failed; no patient was involved.")["criteria_met"] == []
+    assert (
+        severity_signal("Data retrieval from the pump log failed; no patient was involved.")[
+            "criteria_met"
+        ]
+        == []
+    )

@@ -123,7 +123,9 @@ class RagRetriever:
         top_k = top_k or self._settings.retrieval_top_k
         return self._vectorstore.query(question, n_results=top_k)
 
-    def answer(self, question: str, top_k: int | None = None, language: str | None = None) -> RagAnswer:
+    def answer(
+        self, question: str, top_k: int | None = None, language: str | None = None
+    ) -> RagAnswer:
         """Retrieve context and generate a cited answer to `question` via Claude."""
         start = time.perf_counter()
         chunks = self.retrieve(question, top_k=top_k)
@@ -139,7 +141,9 @@ class RagRetriever:
 
         context = _labelled_context(chunks)
         context_block = _build_context_block(context)
-        answer_language = {"en": "English", "es": "Spanish"}.get(language or "") or _detect_answer_language(question)
+        answer_language = {"en": "English", "es": "Spanish"}.get(
+            language or ""
+        ) or _detect_answer_language(question)
         user_prompt = (
             f"CONTEXT:\n{context_block}\n\n"
             f"QUESTION: {question}\n\n"
@@ -162,7 +166,9 @@ class RagRetriever:
         retrieval_score = round(sum(s.relevance_score for s in sources) / len(sources), 4)
         latency_ms = int((time.perf_counter() - start) * 1000)
 
-        logger.info("RAG answer generated in %d ms (retrieval_score=%.2f)", latency_ms, retrieval_score)
+        logger.info(
+            "RAG answer generated in %d ms (retrieval_score=%.2f)", latency_ms, retrieval_score
+        )
         return RagAnswer(
             answer=answer_text,
             sources=sources,

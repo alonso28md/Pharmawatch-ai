@@ -54,11 +54,18 @@ class EvaluationRunResult:
 def _git_commit() -> str | None:
     try:
         commit = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=10
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
         dirty = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=no"],
-            cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=10,
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
         return f"{commit}{'-dirty' if dirty else ''}" or None
     except (OSError, subprocess.SubprocessError):
@@ -95,7 +102,9 @@ class EvaluationHarness:
         self._reviewer_enabled = reviewer_enabled
         # A separate client (and usage counter) only when the reviewer uses another model.
         self.reviewer_llm = (
-            AnthropicLLMClient(model=reviewer_model) if reviewer_enabled and reviewer_model else None
+            AnthropicLLMClient(model=reviewer_model)
+            if reviewer_enabled and reviewer_model
+            else None
         )
         self._graph = build_graph(
             AgentDeps(
@@ -110,8 +119,12 @@ class EvaluationHarness:
 
     def _base(self, case: GoldenCase, repetition: int) -> dict:
         return {
-            "case_id": case.id, "repetition": repetition, "split": case.split,
-            "language": case.language, "subcategory": case.subcategory, "tags": case.tags,
+            "case_id": case.id,
+            "repetition": repetition,
+            "split": case.split,
+            "language": case.language,
+            "subcategory": case.subcategory,
+            "tags": case.tags,
             "expected": case.expected,
         }
 
@@ -136,7 +149,10 @@ class EvaluationHarness:
             **self._base(case, repetition),
             "question": question,
             "answer": answer.answer,
-            "sources": [{"document": s.document, "section": s.section, "chunk_id": s.chunk_id} for s in answer.sources],
+            "sources": [
+                {"document": s.document, "section": s.section, "chunk_id": s.chunk_id}
+                for s in answer.sources
+            ],
             "context": answer.context,
             "cited_labels": answer.cited_labels,
             "retrieval_score": answer.retrieval_score,
@@ -147,7 +163,9 @@ class EvaluationHarness:
         scored = score_rag_case(result)
         if judge_error:
             scored["passed"] = False
-            scored["failure_reason"] = "; ".join(filter(None, [scored["failure_reason"], judge_error]))
+            scored["failure_reason"] = "; ".join(
+                filter(None, [scored["failure_reason"], judge_error])
+            )
         return scored
 
     def _run_classification_case(self, case: GoldenCase, repetition: int) -> dict:
@@ -161,10 +179,25 @@ class EvaluationHarness:
         )
         latency_ms = (time.perf_counter() - start) * 1000
         kept = (
-            "incident_category", "alternative_category", "severity", "severity_confidence",
-            "severity_reasoning", "reportable", "report_to", "deadline_days", "deadline_rule",
-            "device_name", "device_class", "device_class_source", "patient_outcome", "outcome_known",
-            "escalation_level", "escalation_reason", "review", "errors", "processing_steps",
+            "incident_category",
+            "alternative_category",
+            "severity",
+            "severity_confidence",
+            "severity_reasoning",
+            "reportable",
+            "report_to",
+            "deadline_days",
+            "deadline_rule",
+            "device_name",
+            "device_class",
+            "device_class_source",
+            "patient_outcome",
+            "outcome_known",
+            "escalation_level",
+            "escalation_reason",
+            "review",
+            "errors",
+            "processing_steps",
         )
         result = {
             **self._base(case, repetition),
@@ -182,15 +215,23 @@ class EvaluationHarness:
         except LLMUnavailableError as exc:
             # One failed API call should not abort a long run; the case counts as failed.
             logger.warning("Case %s rep %d: LLM unavailable (%s)", case.id, repetition, exc)
-            return {**self._base(case, repetition), "category": case.category, "error": str(exc),
-                    "passed": False, "failure_reason": f"llm_unavailable: {exc}", "latency_ms": None}
+            return {
+                **self._base(case, repetition),
+                "category": case.category,
+                "error": str(exc),
+                "passed": False,
+                "failure_reason": f"llm_unavailable: {exc}",
+                "latency_ms": None,
+            }
 
     # --- whole run ---------------------------------------------------------------------
 
     def run(self, categories: list[str] | None = None) -> EvaluationRunResult:
         settings = get_settings()
         dataset = load_dataset(
-            self._dataset_path, categories=categories, split=self._split,
+            self._dataset_path,
+            categories=categories,
+            split=self._split,
             include_unreviewed=self._include_unreviewed,
         )
         tasks = [(case, rep) for rep in range(self._repetitions) for case in dataset.cases]
@@ -223,8 +264,12 @@ class EvaluationHarness:
         passed = sum(1 for v in outcomes.values() if all(v))
         flaky = sorted(cid for cid, v in outcomes.items() if any(v) and not all(v))
         failed_cases = [
-            {"case_id": cid, "reason": f"failed {v.count(False)}/{len(v)} repetitions: {reasons[cid][0]}"}
-            for cid, v in outcomes.items() if not all(v)
+            {
+                "case_id": cid,
+                "reason": f"failed {v.count(False)}/{len(v)} repetitions: {reasons[cid][0]}",
+            }
+            for cid, v in outcomes.items()
+            if not all(v)
         ]
 
         metadata = {
@@ -238,10 +283,13 @@ class EvaluationHarness:
             "repetitions": self._repetitions,
             "max_workers": self._max_workers,
             "reviewer_enabled": self._reviewer_enabled,
-            "reviewer_model": getattr(self.reviewer_llm, "model", None) if self.reviewer_llm else (
-                getattr(self.system_llm, "model", None) if self._reviewer_enabled else None),
-            "cases": {"rag": sum(1 for c in dataset.cases if c.category == "rag"),
-                      "classification": sum(1 for c in dataset.cases if c.category == "classification")},
+            "reviewer_model": getattr(self.reviewer_llm, "model", None)
+            if self.reviewer_llm
+            else (getattr(self.system_llm, "model", None) if self._reviewer_enabled else None),
+            "cases": {
+                "rag": sum(1 for c in dataset.cases if c.category == "rag"),
+                "classification": sum(1 for c in dataset.cases if c.category == "classification"),
+            },
             "excluded_pending_expert_review": dataset.excluded_for_review,
             "usage": {
                 "system": self.system_llm.usage.snapshot(),
@@ -253,7 +301,9 @@ class EvaluationHarness:
             "errored_runs": [f"{r['case_id']}#{r['repetition']}" for r in results if "error" in r],
         }
         rag_results = [r for r in results if by_category[r["case_id"]] == "rag"]
-        classification_results = [r for r in results if by_category[r["case_id"]] == "classification"]
+        classification_results = [
+            r for r in results if by_category[r["case_id"]] == "classification"
+        ]
         return EvaluationRunResult(
             total_cases=len(outcomes),
             passed=passed,

@@ -21,7 +21,9 @@ def main() -> None:
     if latest is None:
         sys.exit(f"No stored evaluation for dataset '{label}' in ARTIFACTS_DIR/evaluations")
     target = ROOT / "frontend" / "src" / "mocks" / "evaluation.fixture.json"
-    target.write_text(json.dumps(latest.model_dump(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(latest.model_dump(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"Wrote {target.relative_to(ROOT)} from {latest.file}")
 
 

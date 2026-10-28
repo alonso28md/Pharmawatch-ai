@@ -31,7 +31,8 @@ def test_size_ids_and_metadata():
 
 
 @pytest.mark.parametrize(
-    "category", ["public_health_threat", "death", "unanticipated_serious_deterioration", "other_serious"]
+    "category",
+    ["public_health_threat", "death", "unanticipated_serious_deterioration", "other_serious"],
 )
 def test_each_deadline_trigger_has_at_least_ten_reviewed_cases(category):
     assert sum(1 for c in CLASSIFICATION if c["expected"].get("category") == category) >= 10
@@ -45,17 +46,26 @@ def test_coverage_of_required_scenarios():
     assert tags["typo"] + tags["noisy"] + tags["long"] >= 4
     assert sum(1 for c in CLASSIFICATION if "device_class" not in c["input"]) >= 50
     assert sum(1 for c in CLASSIFICATION if c["expected"].get("escalate")) >= 10
-    assert {c["subcategory"] for c in CLASSIFICATION} >= {"unknown_outcome", "contradictory", "injection"}
+    assert {c["subcategory"] for c in CLASSIFICATION} >= {
+        "unknown_outcome",
+        "contradictory",
+        "injection",
+    }
 
 
 def test_both_splits_cover_every_classification_label():
     for split in ("dev", "test"):
         labels = {
-            c["expected"].get("category", "escalate")
-            for c in CLASSIFICATION if c["split"] == split
+            c["expected"].get("category", "escalate") for c in CLASSIFICATION if c["split"] == split
         }
-        assert labels == {"public_health_threat", "death", "unanticipated_serious_deterioration",
-                          "other_serious", "non_serious", "escalate"}
+        assert labels == {
+            "public_health_threat",
+            "death",
+            "unanticipated_serious_deterioration",
+            "other_serious",
+            "non_serious",
+            "escalate",
+        }
 
 
 def test_no_expected_answer_appears_literally_in_the_question():
@@ -85,4 +95,6 @@ def test_loader_filters_split_and_excludes_unreviewed():
     assert not any(c.needs_expert_review for c in test_only.cases)
     everything = load_dataset(PATH, split="all", include_unreviewed=True)
     assert len(everything.cases) == len(CASES)
-    assert len(load_dataset(PATH).excluded_for_review) == sum(c["needs_expert_review"] for c in CASES)
+    assert len(load_dataset(PATH).excluded_for_review) == sum(
+        c["needs_expert_review"] for c in CASES
+    )

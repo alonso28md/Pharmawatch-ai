@@ -58,7 +58,10 @@ async def evaluate(request: Request, payload: EvaluateRequest) -> EvaluateRespon
     pass_rate = round(result.passed / result.total_cases, 4) if result.total_cases else None
     return EvaluateResponse(
         summary=EvaluationSummary(
-            total_cases=result.total_cases, passed=result.passed, failed=result.failed, pass_rate=pass_rate
+            total_cases=result.total_cases,
+            passed=result.passed,
+            failed=result.failed,
+            pass_rate=pass_rate,
         ),
         metrics=result.metrics,
         failed_cases=[FailedCase(**fc) for fc in result.failed_cases],

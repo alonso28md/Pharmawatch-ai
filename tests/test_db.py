@@ -39,7 +39,11 @@ def test_list_queries_orders_newest_first(tmp_path):
 def test_log_and_list_evaluation_runs(tmp_path):
     repository = _repo(tmp_path)
     run_id = repository.log_evaluation_run(
-        total_cases=30, passed=29, failed=1, metrics_json='{"retrieval_accuracy": 1.0}', report_path="docs/x.md"
+        total_cases=30,
+        passed=29,
+        failed=1,
+        metrics_json='{"retrieval_accuracy": 1.0}',
+        report_path="docs/x.md",
     )
     assert run_id > 0
 
@@ -77,7 +81,11 @@ def test_compute_operational_metrics_aggregates_correctly(tmp_path):
 
     assert metrics["total_queries"] == 4
     assert metrics["avg_latency_ms"] == 1625.0
-    assert metrics["classification_distribution"] == {"serious": 1, "non-serious": 1, "escalated": 1}
+    assert metrics["classification_distribution"] == {
+        "serious": 1,
+        "non-serious": 1,
+        "escalated": 1,
+    }
     assert metrics["escalation_rate"] == round(1 / 3, 4)
     assert metrics["top_device_classes"] == {"IIb": 1, "I": 1}
     assert metrics["error_rate"] == 0.25

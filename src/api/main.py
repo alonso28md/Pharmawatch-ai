@@ -44,10 +44,14 @@ install_error_handlers(app)
 # BodySizeLimit -> SlowAPI -> routes. Observability wraps everything that can fail
 # (413, 429, 5xx) so every business request is logged with its real status.
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(BodySizeLimitMiddleware, max_bytes_provider=lambda: get_settings().max_request_bytes)
+app.add_middleware(
+    BodySizeLimitMiddleware, max_bytes_provider=lambda: get_settings().max_request_bytes
+)
 app.add_middleware(
     ObservabilityMiddleware,
-    sink=db_request_log_sink(get_repository, store_input_text=lambda: get_settings().store_input_text),
+    sink=db_request_log_sink(
+        get_repository, store_input_text=lambda: get_settings().store_input_text
+    ),
 )
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(

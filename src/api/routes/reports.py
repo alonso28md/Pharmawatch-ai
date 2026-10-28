@@ -13,7 +13,9 @@ from src.api.schemas import IncidentPage, IncidentSummary, ReportResponse
 router = APIRouter()
 
 
-@router.get("/reports", response_model=IncidentPage, tags=["agent"], dependencies=[Depends(verify_api_key)])
+@router.get(
+    "/reports", response_model=IncidentPage, tags=["agent"], dependencies=[Depends(verify_api_key)]
+)
 async def list_reports(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -28,9 +30,16 @@ async def list_reports(
     until = datetime.combine(date_to + timedelta(days=1), time.min, tzinfo=UTC) if date_to else None
     items, total = await asyncio.to_thread(
         get_repository().list_incidents,
-        limit=limit, offset=offset, severity=severity, escalation=escalation, since=since, until=until,
+        limit=limit,
+        offset=offset,
+        severity=severity,
+        escalation=escalation,
+        since=since,
+        until=until,
     )
-    return IncidentPage(items=[IncidentSummary(**i) for i in items], total=total, limit=limit, offset=offset)
+    return IncidentPage(
+        items=[IncidentSummary(**i) for i in items], total=total, limit=limit, offset=offset
+    )
 
 
 @router.get(

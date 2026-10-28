@@ -63,8 +63,16 @@ def _bind(node: Callable[[IncidentState, AgentDeps], dict], deps: AgentDeps):
 def build_graph(deps: AgentDeps) -> CompiledStateGraph:
     """Build and compile the incident-classification StateGraph around `deps`."""
     graph = StateGraph(IncidentState)
-    for node in (extract_info, classify_device, assess_severity, gate, determine_reporting,
-                 generate_report, escalate, finalize):
+    for node in (
+        extract_info,
+        classify_device,
+        assess_severity,
+        gate,
+        determine_reporting,
+        generate_report,
+        escalate,
+        finalize,
+    ):
         graph.add_node(node.__name__, _bind(node, deps))
 
     graph.set_entry_point("extract_info")
@@ -72,14 +80,16 @@ def build_graph(deps: AgentDeps) -> CompiledStateGraph:
     graph.add_edge("classify_device", "assess_severity")
     graph.add_edge("assess_severity", "gate")
     graph.add_conditional_edges(
-        "gate", _route_after_gate,
+        "gate",
+        _route_after_gate,
         {"escalate": "escalate", "determine_reporting": "determine_reporting"},
     )
     if deps.reviewer_enabled:
         graph.add_node("review", _bind(review, deps))
         graph.add_edge("determine_reporting", "review")
         graph.add_conditional_edges(
-            "review", _route_after_review,
+            "review",
+            _route_after_review,
             {"escalate": "escalate", "generate_report": "generate_report"},
         )
     else:
@@ -97,7 +107,8 @@ def default_deps() -> AgentDeps:
     settings = get_settings()
     reviewer_llm = (
         AnthropicLLMClient(model=settings.reviewer_model)
-        if settings.reviewer_enabled and settings.reviewer_model else None
+        if settings.reviewer_enabled and settings.reviewer_model
+        else None
     )
     return AgentDeps(
         llm=get_llm_client(),
@@ -205,7 +216,9 @@ def run_incident_classification(
     otherwise the process-wide compiled graph is reused.
     """
     graph = build_graph(deps) if deps is not None else get_default_graph()
-    final_state = graph.invoke(build_initial_state(description, device_name_hint, device_class_hint))
+    final_state = graph.invoke(
+        build_initial_state(description, device_name_hint, device_class_hint)
+    )
     logger.info(
         "Incident classification complete: category=%s escalation=%s",
         final_state.get("incident_category"),

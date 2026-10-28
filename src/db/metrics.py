@@ -24,10 +24,14 @@ def compute_operational_metrics(queries: list[QueryLog]) -> dict:
         return status >= 500 or (bool(q.error) and not 400 <= status < 500)
 
     server_errors = sum(1 for q in queries if is_server_error(q))
-    client_errors = sum(1 for q in queries if q.status_code is not None and 400 <= q.status_code < 500)
+    client_errors = sum(
+        1 for q in queries if q.status_code is not None and 400 <= q.status_code < 500
+    )
 
     reports = [
-        q for q in queries if q.endpoint in ("/report", "/report/stream") and (q.status_code or 200) < 400
+        q
+        for q in queries
+        if q.endpoint in ("/report", "/report/stream") and (q.status_code or 200) < 400
     ]
     escalated = [q for q in reports if q.escalated]
     blocking = [q for q in reports if q.escalation_level == "blocking"]

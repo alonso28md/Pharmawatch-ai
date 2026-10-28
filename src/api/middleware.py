@@ -56,7 +56,10 @@ def _json_response_messages(status: int, payload: dict) -> list[dict]:
         {
             "type": "http.response.start",
             "status": status,
-            "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())],
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(body)).encode()),
+            ],
         },
         {"type": "http.response.body", "body": body},
     ]
@@ -102,7 +105,8 @@ class ObservabilityMiddleware:
             log.status_code = 500
             if not response_started:
                 for message in _json_response_messages(
-                    500, {"code": "internal_error", "message": "Internal server error", "details": None}
+                    500,
+                    {"code": "internal_error", "message": "Internal server error", "details": None},
                 ):
                     await send(message)
         finally:
@@ -168,7 +172,8 @@ class SecurityHeadersMiddleware:
         async def send_with_headers(message):
             if message["type"] == "http.response.start":
                 headers = [
-                    (k, v) for k, v in message.get("headers", [])
+                    (k, v)
+                    for k, v in message.get("headers", [])
                     if k.lower() not in {b"content-security-policy", b"x-frame-options"}
                 ]
                 headers += [
@@ -239,6 +244,11 @@ class BodySizeLimitMiddleware:
         if log is not None:
             log.error = "payload_too_large"
         for message in _json_response_messages(
-            413, {"code": "payload_too_large", "message": f"Request body exceeds {limit} bytes", "details": None}
+            413,
+            {
+                "code": "payload_too_large",
+                "message": f"Request body exceeds {limit} bytes",
+                "details": None,
+            },
         ):
             await send(message)
