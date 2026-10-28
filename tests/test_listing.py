@@ -124,10 +124,34 @@ async def test_latest_evaluation_prefers_newest_run_and_its_rescored_file(
     assert "results" not in body
     newest_any = (await api_client.get("/evaluations/latest")).json()
     assert newest_any["file"] == "eval_default_20261028T000000Z.json"
+    assert body["source"] == newest_any["source"] == "artifacts"
+
+
+async def test_latest_evaluation_falls_back_to_the_versioned_snapshot(
+    api_client, monkeypatch, tmp_path
+):
+    """A fresh clone has no ARTIFACTS_DIR results: serve docs/results, labelled as such."""
+    from src.api.routes.evaluations import SNAPSHOT
+
+    monkeypatch.setenv("ARTIFACTS_DIR", str(tmp_path))
+    get_settings.cache_clear()
+    snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    body = (await api_client.get("/evaluations/latest")).json()
+    assert body["source"] == "snapshot"
+    assert body["file"] == snapshot["file"]
+    assert body["metric_summary"] == snapshot["metric_summary"]
+    assert (
+        await api_client.get("/evaluations/latest", params={"dataset": "v2"})
+    ).status_code == 200
+    other = await api_client.get("/evaluations/latest", params={"dataset": "default"})
+    assert other.status_code == 404
 
 
 async def test_latest_evaluation_404_and_no_path_injection(api_client, monkeypatch, tmp_path):
+    from src.api.routes import evaluations
+
     monkeypatch.setenv("ARTIFACTS_DIR", str(tmp_path))
+    monkeypatch.setattr(evaluations, "SNAPSHOT", tmp_path / "missing.json")
     get_settings.cache_clear()
     assert (await api_client.get("/evaluations/latest")).status_code == 404
     assert (

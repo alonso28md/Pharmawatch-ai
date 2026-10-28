@@ -232,6 +232,7 @@ export const es = {
     usageLine: "{calls} llamadas · {input} entrada / {output} salida",
     casesLine: "RAG {rag} · clasificación {classification}",
     rescored: "Re-puntuado offline",
+    snapshot: "Resumen versionado en el repositorio (docs/results): este servidor no tiene resultados propios en ARTIFACTS_DIR.",
     passedAll: "Casos superados en todas las repeticiones",
     flaky: "Casos inestables",
     groups: { rag: "Recuperación y respuestas", classification: "Clasificación y plazos", safety: "Escalado y seguridad", latency: "Latencia" },

@@ -2,7 +2,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
-import fixture from "@/mocks/evaluation.fixture.json";
+import fixture from "../../../docs/results/evaluation_latest.json";
 import { metricsFixture } from "@/mocks/fixtures";
 import { server } from "@/mocks/server";
 import { renderApp } from "./render";

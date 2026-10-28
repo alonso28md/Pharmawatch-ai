@@ -195,6 +195,12 @@ export function EvaluationPage() {
                 </div>
               ))}
             </dl>
+            {data.source === "snapshot" && (
+              <p className="mt-3 flex items-center gap-2 text-small text-ink-muted">
+                <Info className="size-4 shrink-0" aria-hidden="true" />
+                {t.evaluation.snapshot}
+              </p>
+            )}
             {data.rescored && (
               <p className="mt-3 flex items-center gap-2 text-small text-ink-muted">
                 <FlaskConical className="size-4" aria-hidden="true" />

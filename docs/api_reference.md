@@ -1,214 +1,173 @@
-# API Reference
+# API reference
 
-Base URL (local): `http://localhost:8000`. Interactive OpenAPI docs are
-served at `/docs` (Swagger UI) and `/redoc`.
+Base URL in local development: `http://localhost:8000`. The interactive schema is at
+`/docs` (Swagger UI) and `/openapi.json`; `frontend/openapi.json` is a committed copy used to
+generate the typed client (`python scripts/export_openapi.py`, then `npm run gen:api`).
 
-All endpoints return JSON. `/ask`, `/report`, and `/evaluate` are rate
-limited (`RATE_LIMIT_PER_MINUTE`, default 30/min per client IP) and, if
-`API_KEY` is configured, require an `X-API-Key` header.
+## Authentication
 
----
+Send the key in the `X-API-Key` header. Behaviour depends on two settings:
 
-## `GET /health`
+| `API_KEY` | `DEMO_MODE` | `/ask`, `/report`, `/report/stream`, `/reports` | `/evaluate` |
+|---|---|---|---|
+| set | any | key required (401 if missing or wrong) | key required |
+| empty | `true` | open | 403 `endpoint_disabled` |
+| empty | `false` (default) | 403 `endpoint_disabled` | 403 `endpoint_disabled` |
 
-Service healthcheck: vector store connectivity, DB connectivity, configured
-model, uptime.
+`/health`, `/config`, `/metrics` and `/evaluations/latest` are public and read-only. Keys are
+compared in constant time.
 
-```bash
-curl http://localhost:8000/health
+## Errors
+
+Every error has the same envelope:
+
+```json
+{ "code": "unauthorized", "message": "Invalid or missing API key", "details": null }
 ```
+
+| Status | `code` | When |
+|---|---|---|
+| 401 | `unauthorized` | `API_KEY` is set and the header is missing or wrong. |
+| 403 | `endpoint_disabled` | The endpoint is disabled by configuration (see the table above). |
+| 404 | `not_found` | Unknown incident id, no stored evaluation, unknown route. |
+| 409 | `evaluation_in_progress` | `POST /evaluate` while another evaluation runs in this process. |
+| 413 | `payload_too_large` | Request body over `MAX_REQUEST_BYTES` (default 64 000), rejected before parsing. |
+| 422 | `validation_error` / `unknown_dataset` | Invalid body or query (text too short or long, wrong enum, unknown dataset). Details never echo the submitted text. |
+| 429 | `rate_limited` | More than `RATE_LIMIT_PER_MINUTE` requests per minute from one client on a cost-bearing endpoint. |
+| 500 | `internal_error` | Unhandled error; logged server-side, no details returned. |
+| 503 | `llm_unavailable` / `llm_bad_output` | The model provider failed or returned an unusable response. |
+
+## Endpoints
+
+| Method | Path | Auth | Model calls |
+|---|---|---|---|
+| GET | `/health` | public | no |
+| GET | `/config` | public | no |
+| POST | `/ask` | key / demo | yes |
+| POST | `/report` | key / demo | yes |
+| POST | `/report/stream` | key / demo | yes |
+| GET | `/reports` | key / demo | no |
+| GET | `/reports/{incident_id}` | key / demo | no |
+| GET | `/metrics` | public | no |
+| GET | `/evaluations/latest` | public | no |
+| POST | `/evaluate` | key always | yes (minutes, costly) |
+
+Cost-bearing endpoints (`/ask`, `/report`, `/report/stream`, `/evaluate`) are rate-limited.
+
+### `GET /health`
 
 ```json
 {
   "status": "healthy",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "vectorstore": "connected",
-  "vectorstore_documents": 87,
+  "vectorstore_documents": 93,
   "database": "connected",
   "model": "claude-sonnet-5-5",
-  "uptime_seconds": 42.1
+  "uptime_seconds": 12.6
 }
 ```
 
----
+`status` is `degraded` when the vector store or the database is unavailable.
 
-## `POST /ask`
+### `GET /config`
 
-Answer a regulatory question with citations from the indexed MDR/AEMPS
-documents.
+Non-secret capabilities: model id, rate limit, retrieval top-k, supported languages
+(`en`, `es`) and the list of endpoints. Never returns keys.
+
+### `POST /ask`
+
+Regulatory question answered from the indexed corpus.
+
+| Field | Type | Notes |
+|---|---|---|
+| `question` | string, 10–4000 chars | required |
+| `language` | `"en"` \| `"es"` \| null | forces the answer language; omitted = detected from the question |
+
+Response:
+
+| Field | Notes |
+|---|---|
+| `answer` | Answer text with `[Cn]` citation labels. |
+| `sources` | Retrieved fragments: `document`, `section`, `text`, `relevance_score`, `chunk_id`. |
+| `context` | The fragments exactly as given to the model, each with its `label` (`C1`…). |
+| `cited_labels` | Labels the answer cites. |
+| `answered_from_context` | `true` when the answer cites at least one fragment; `false` usually means the model abstained because the corpus does not answer the question. |
+| `retrieval_score` | Mean similarity of the retrieved fragments (not a confidence in the answer). |
+| `processing_time_ms` | Server-side time. |
 
 ```bash
 curl -X POST http://localhost:8000/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is the reporting deadline for a serious incident?"}'
+  -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
+  -d '{"question": "What is the deadline to report a serious public health threat?"}'
 ```
 
-```json
-{
-  "answer": "The deadline depends on the type of serious incident...",
-  "sources": [
-    {
-      "document": "MDR 2017/745 (Articles 87-92, Vigilance)",
-      "section": "Article 87 - Reporting of serious incidents and field safety corrective actions",
-      "text": "Manufacturers shall report any serious incident...",
-      "relevance_score": 0.85
-    }
-  ],
-  "confidence": 0.82,
-  "processing_time_ms": 6200
-}
-```
+### `POST /report`
+
+Classifies an incident description and drafts the reporting determination.
 
 | Field | Type | Notes |
 |---|---|---|
-| `question` | string, required, min 10 chars | |
-| `language` | string, optional | Currently informational; answer language is auto-detected from the question text. |
+| `description` | string, 20–4000 chars | required; do not include patient-identifying data |
+| `device_name` | string, ≤ 200 chars | optional |
+| `device_class` | `"I"` \| `"IIa"` \| `"IIb"` \| `"III"` | optional; otherwise extracted from the text or derived from Annex VIII keywords |
 
----
+Response (`ReportResponse`):
 
-## `POST /report`
-
-Classify a medical device adverse event and determine reporting
-requirements.
-
-```bash
-curl -X POST http://localhost:8000/report \
-  -H "Content-Type: application/json" \
-  -d '{
-    "description": "During a routine MRI scan, the contrast injector malfunctioned and delivered 3x the programmed dose of gadolinium. The patient experienced nausea and was kept for observation for 24 hours.",
-    "device_name": "GadoFlow 3000 Contrast Injector",
-    "device_class": "IIb"
-  }'
-```
-
-```json
-{
-  "incident_id": "INC-2026-A1B2C3",
-  "severity": "serious",
-  "severity_confidence": 0.89,
-  "severity_reasoning": "The overdose led to patient symptoms requiring extended observation...",
-  "reportable": true,
-  "report_to": ["competent_authority", "manufacturer"],
-  "deadline_days": 15,
-  "device_class": "IIb",
-  "classification_rule": "Provided by caller / extracted directly from description",
-  "escalated_to_human": false,
-  "escalation_reason": null,
-  "rag_sources": [
-    {"document": "MDR 2017/745 (Articles 87-92, Vigilance)", "section": "Article 87 - ...", "text": "..."}
-  ],
-  "draft_notification": {
-    "incident_date": null,
-    "reporter_type": "healthcare_professional",
-    "device_identification": "GadoFlow 3000 Contrast Injector",
-    "event_description": "Contrast media overdose (3x programmed dose)...",
-    "patient_outcome": "Nausea, 24h observation",
-    "corrective_action": "Pending investigation"
-  },
-  "processing_time_ms": 14300
-}
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| `description` | string, required, min 20 chars | |
-| `device_name` | string, optional | |
-| `device_class` | `"I" \| "IIa" \| "IIb" \| "III"`, optional | Skips the Annex VIII keyword-classification step if provided. |
-
-When the agent can't safely auto-determine the outcome (low confidence,
-contradictory description, or missing critical information), `reportable`,
-`report_to`, and `deadline_days` are `null` and `escalated_to_human` is
-`true` with a human-readable `escalation_reason`.
-
-**422** is returned for a too-short description or one matching a basic
-prompt-injection pattern.
-
----
-
-## `POST /evaluate`
-
-Run the golden-dataset evaluation harness (real Claude API calls - this can
-take several minutes) and refresh `docs/evaluation_report.{md,json}`.
-
-```bash
-curl -X POST http://localhost:8000/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{"dataset": "default", "verbose": false}'
-```
-
-```json
-{
-  "summary": {"total_cases": 30, "passed": 29, "failed": 1, "pass_rate": 0.9667},
-  "metrics": {
-    "retrieval_accuracy": 1.0,
-    "answer_faithfulness": 0.841,
-    "hallucination_rate": 0.0,
-    "classification_accuracy": 0.9,
-    "reportability_accuracy": 0.9,
-    "escalation_appropriateness": 1.0,
-    "latency_p50_ms": 7686.0,
-    "latency_p95_ms": 13967.0,
-    "source_citation_rate": 1.0
-  },
-  "failed_cases": [{"case_id": "case_018", "reason": "expected severity='serious', got 'non-serious'; expected reportable=True, got None"}],
-  "report_path": "docs/evaluation_report.md",
-  "timestamp": "2026-10-27T12:36:03Z"
-}
-```
-
----
-
-## `GET /metrics`
-
-Operational metrics aggregated from the real SQLite-backed query log
-(`src/db`) - not the evaluation harness. Reflects actual API traffic.
-
-```bash
-curl http://localhost:8000/metrics
-```
-
-```json
-{
-  "total_queries": 142,
-  "queries_last_24h": 23,
-  "avg_latency_ms": 7776.3,
-  "p95_latency_ms": 13440.0,
-  "classification_distribution": {"serious": 38, "non-serious": 89, "escalated": 15},
-  "escalation_rate": 0.106,
-  "top_device_classes": {"IIb": 52, "IIa": 41, "III": 28, "I": 21},
-  "avg_confidence": 0.83,
-  "error_rate": 0.014
-}
-```
-
----
-
-## `GET /config`
-
-Non-secret capability metadata for a future client to configure itself
-against.
-
-```bash
-curl http://localhost:8000/config
-```
-
-```json
-{
-  "model": "claude-sonnet-5-5",
-  "rate_limit_per_minute": 30,
-  "retrieval_top_k": 5,
-  "supported_languages": ["en", "es"],
-  "endpoints": ["/health", "/ask", "/report", "/evaluate", "/metrics", "/config"]
-}
-```
-
----
-
-## Error responses
-
-| Status | When |
+| Field | Notes |
 |---|---|
-| 422 | Validation failure (field too short/long) or a prompt-injection pattern match |
-| 429 | Rate limit exceeded - `{"detail": "Rate limit exceeded. Please slow down."}` |
-| 401 | Missing/invalid `X-API-Key` (only when `API_KEY` is configured) |
-| 500 | Unhandled server error - generic message only, no stack trace, full detail logged server-side |
+| `incident_id` | `INC-YYYY-XXXXXXXX`. |
+| `incident_category` | `death`, `unanticipated_serious_deterioration`, `public_health_threat`, `other_serious`, `non_serious` or `unknown`. |
+| `severity`, `severity_confidence`, `severity_reasoning` | Serious / non-serious, the model-reported confidence and its reasoning. |
+| `reportable`, `deadline_days`, `deadline_rule`, `report_to` | From `data/classification_rules.json`; `null` when the determination is withheld. |
+| `device_class`, `device_class_source`, `classification_rule` | Class, where it came from (`caller`, `extracted`, `rule`) and the Annex VIII rule applied. |
+| `escalation_level` | `none`, `advisory` (determination kept, flagged) or `blocking` (determination withheld; a human must decide). |
+| `escalated_to_human`, `escalation_reason` | `escalation_reason` is free English text (no stable codes yet). |
+| `rag_sources` | Regulatory fragments consulted. |
+| `draft_notification` | Editable notification fields when the incident is reportable. |
+
+### `POST /report/stream`
+
+Same body as `POST /report`, answered as Server-Sent Events:
+
+| Event | Data |
+|---|---|
+| `step` | `{"node": "extract_info", "index": 1}` — one per graph node actually executed, in order |
+| `result` | a `ReportResponse` |
+| `error` | `{"code", "message"}` (e.g. `llm_unavailable`) |
+
+Validation and authentication errors are normal HTTP errors returned before the stream starts.
+
+### `GET /reports`
+
+Stored incident results, newest first. Query parameters: `limit` (1–100, default 20),
+`offset`, `severity` (`serious` | `non-serious`), `escalation` (`none` | `advisory` |
+`blocking` | `escalated` = advisory or blocking), `date_from`, `date_to` (inclusive UTC
+calendar days, `YYYY-MM-DD`). Response: `{"items": [...], "total", "limit", "offset"}`; each
+item is a `ReportResponse` plus `created_at`.
+
+### `GET /reports/{incident_id}`
+
+One stored incident result, or 404.
+
+### `GET /metrics`
+
+Operational metrics from the request log: total and last-24 h requests, latency average /
+p50 / p95 and sample count, 5xx and 4xx rates, escalation and blocking-escalation rates,
+outcome distribution, device classes, average model-reported confidence. Demo rows are
+excluded unless `?include_demo=true`.
+
+### `GET /evaluations/latest`
+
+The newest stored evaluation result in `ARTIFACTS_DIR/evaluations` (a re-scored file is
+preferred to its original): provenance metadata, per-metric mean / min / max / threshold and
+failed cases. Optional `dataset` label (e.g. `v2`); omitted = newest of any dataset. 404 when none is stored. Read-only: it never
+starts an evaluation.
+
+### `POST /evaluate`
+
+Runs the evaluation harness with real model calls (minutes; costs money). Body:
+`{"dataset": "v2", "categories": ["rag", "classification"]}`. Only names in the
+`EVALUATION_DATASETS` whitelist are accepted; one run per process (409 while busy). Results are
+written as JSON to `ARTIFACTS_DIR/evaluations`; the response includes the summary, metrics,
+failed cases and the file name.

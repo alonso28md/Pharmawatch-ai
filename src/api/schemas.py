@@ -112,6 +112,9 @@ class EvaluationLatest(BaseModel):
 
     file: str
     rescored: bool
+    # "artifacts": a result file in ARTIFACTS_DIR; "snapshot": the summary versioned in
+    # docs/results/ (served when this installation has no stored results of its own).
+    source: Literal["artifacts", "snapshot"] = "artifacts"
     timestamp: str | None
     metadata: dict
     summary: dict

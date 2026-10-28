@@ -13,6 +13,8 @@ export default defineConfig(({ command, isPreview }) => ({
   // No data: URIs: the backend's CSP is `default-src 'self'`, which blocks inlined fonts/images.
   build: { assetsInlineLimit: 0 },
   server: {
+    // Mock mode imports the versioned evaluation summary from ../docs/results.
+    fs: { allow: [".."] },
     port: 5173,
     strictPort: true,
     proxy: {

@@ -1,84 +1,87 @@
 # Security
 
-This is a portfolio project, not a certified medical device or a production
-pharmacovigilance system. It does implement the security practices below, and
-documents what it deliberately does *not* handle.
+PharmaWatch AI is a portfolio project and a decision-support prototype. It is not a medical
+device, has no regulatory certification, and has not been security-audited by a third party.
+This page lists the controls it implements and, just as important, what it does not handle.
 
 ## Secrets
 
-- `ANTHROPIC_API_KEY` and `API_KEY` are read from environment variables /
-  `.env` only (`src/config.py`, pydantic-settings). Neither is ever
-  hardcoded, logged, or returned in an API response.
-- `.env` is gitignored; `.env.example` ships with every value blank.
-- `GET /config` exposes only non-secret capability metadata (model name,
-  rate limit, supported languages, endpoint list) - never keys.
+- `ANTHROPIC_API_KEY` and `API_KEY` come from environment variables or a local `.env` file
+  (`src/config.py`). They are never hard-coded, logged or returned by the API.
+- `.env` is git-ignored; `.env.example` ships with every secret blank.
+- `GET /config` and `GET /health` expose only non-secret metadata.
+- LLM errors keep the provider's status and message for diagnosis but never include keys.
 
-## Input handling
+## Access control and cost containment
 
-- Every user-supplied free-text field (`/ask` question, `/report`
-  description) is sanitized before it reaches Claude
-  (`src/api/security.py`):
-  - Length-capped (422 if exceeded).
-  - Control characters stripped.
-  - Role-marker lines (`system:`, `assistant:`, `user:`) at the start of a
-    line are stripped, so a user can't fake a conversation turn.
-  - A small set of known prompt-injection patterns ("ignore all previous
-    instructions", "reveal your system prompt", etc.) is rejected outright
-    (422) rather than passed through.
-  - This is a basic, pattern-based screen, not a guarantee against
-    sophisticated prompt injection - see Known limitations below.
-- Pydantic v2 schemas (`src/api/schemas.py`) enforce types and minimum
-  lengths at the API boundary before any application code runs.
+- Cost-bearing endpoints (`/ask`, `/report`, `/report/stream`) and the incident history
+  (`/reports`) need `X-API-Key` when `API_KEY` is set. With `API_KEY` empty they are
+  **disabled (403)** unless `DEMO_MODE=true` is set explicitly.
+- `/evaluate` always needs a configured `API_KEY`, accepts only whitelisted dataset names (never
+  a path) and runs one evaluation per process (409 while busy).
+- Keys are compared with `hmac.compare_digest`.
+- Rate limit per client IP on the cost-bearing endpoints (`RATE_LIMIT_PER_MINUTE`, default 30).
+- Request bodies over `MAX_REQUEST_BYTES` (default 64 000) are rejected with 413 before parsing.
 
-## Transport and response security
+## Input handling and prompt injection
 
-- `SecurityHeadersMiddleware` sets `X-Content-Type-Options: nosniff`,
-  `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`,
-  `Content-Security-Policy: default-src 'self'`, and
-  `X-XSS-Protection: 0` on every response.
-  - The strict CSP is enforced, not just set-and-forget: the demo page
-    (`static/`) was refactored to external `.css`/`.js` files specifically
-    because its own inline `<script>`/`<style>` tripped this CSP during
-    manual verification - see the Phase 4 commit for the full story.
-- CORS is explicit-origin (`CORS_ORIGINS` env var), not wildcard.
-- The catch-all exception handler in `src/api/main.py` never leaks stack
-  traces or internal error details to the client - it logs server-side and
-  returns a generic 500.
+- Pydantic schemas enforce types and lengths (questions 10–4000 characters, descriptions
+  20–4000, device names ≤ 200) after stripping whitespace.
+- `src/api/security.py` strips control characters, zero-width characters and role-marker lines
+  (`system:`, `assistant:`, `user:`).
+- A pattern screen (English and Spanish) **flags** likely prompt-injection text. It is a signal,
+  not a defence: it can be bypassed and it produced false positives on legitimate questions,
+  so it no longer rejects requests. Matches are logged; on `/report` they add an advisory
+  escalation with an explicit reason.
+- The defences that do the work are structural: user text is delimited as untrusted data in
+  every prompt, model output is constrained by a JSON schema, and deadlines and recipients come
+  from the rules table (`data/classification_rules.json`), never from model text.
+- The evaluation includes prompt-injection cases; quoting an injected payload while refusing it
+  counts as a mention, not as compliance.
 
-## Rate limiting and auth
+## Responses and transport
 
-- `slowapi`-based rate limiting (`RATE_LIMIT_PER_MINUTE`, default 30/min),
-  keyed by client IP, on `/ask`, `/report`, and `/evaluate`.
-- An optional API-key dependency (`verify_api_key` in `src/api/deps.py`) is
-  enforced on those same routes only when `API_KEY` is set - unset, the API
-  is open (suitable for the public demo/portfolio deployment; set it for
-  anything else).
+- Security headers on every response, including middleware-generated 500s:
+  `Content-Security-Policy: default-src 'self'` (the web interface ships no inline scripts,
+  styles or `data:` assets so that it works under this policy), `X-Content-Type-Options:
+  nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`. Only `/docs` and `/redoc`
+  get a policy that allows the Swagger UI / ReDoc CDN assets.
+- Uniform error envelope `{code, message, details}`; validation details never echo the
+  submitted text; unhandled errors return a generic 500 and are logged server-side.
+- CORS is limited to the origins in `CORS_ORIGINS` (no wildcard).
+- The web interface is served from the same origin as the API, so the key is never sent to a
+  third party. `/app` refuses path traversal and never serves files outside `frontend/dist`.
 
 ## Data handling
 
-- The regulatory corpus (`data/regulations/`) is public legal text (EUR-Lex,
-  AEMPS) - no PII, no confidentiality concerns.
-- `/report` descriptions and `/ask` questions submitted by a caller **are
-  not necessarily de-identified**. If this were deployed for real incident
-  intake, submitted text should be scrubbed of patient-identifying details
-  (names, dates of birth, record numbers) before it reaches any third-party
-  LLM API - this project does not implement that scrubbing, since the
-  golden-dataset test cases are already synthetic/de-identified by
-  construction. A production deployment handling real patient narratives
-  would need a dedicated de-identification step and a signed data-processing
-  agreement with the LLM provider.
-- Query logs (`src/db`) store the submitted text and the system's output
-  summary for operational metrics. In a real deployment this table would
-  need a retention policy and the same de-identification treatment as above.
+- The regulatory corpus (`data/regulations/`) is public legal and guidance text.
+- **Do not submit patient-identifying data.** Descriptions are sent to a third-party model API.
+  The interface says so on every screen; there is no automatic de-identification.
+- By default the request log stores only the **length and SHA-256** of submitted text
+  (`STORE_INPUT_TEXT=false`), not the text itself.
+- Incident results are stored without the free-text narrative.
+- The web interface keeps the API key in memory (optionally in `sessionStorage` until the tab
+  closes), never in `localStorage`. Language, theme and motion preferences are the only
+  values stored in `localStorage`.
 
-## Known limitations (explicitly not addressed)
+## Limits — not handled
 
-- No authentication/authorization model beyond a single shared API key -
-  no per-user accounts, roles, or audit trail of *who* submitted a report.
-- The prompt-injection screen is pattern-based and will miss novel phrasings;
-  it is a mitigation, not a guarantee.
-- No encryption-at-rest for the SQLite file or the Chroma vector store -
-  both are plain files on disk, appropriate for a local/demo deployment only.
-- No automated dependency vulnerability scanning is wired into CI (a
-  `pip-audit` or `safety` step would be a reasonable addition - see the
-  README roadmap).
+- **Single shared key.** No user accounts, roles, per-user audit trail or approval workflow.
+  The review queue is read-only.
+- **No de-identification** of submitted text, and no data-processing agreement with the model
+  provider is implied.
+- **No encryption at rest** for SQLite or Chroma; both are plain files meant for local use.
+- **Rate limiting is in-process and per IP**: it does not hold across several workers or
+  behind a proxy that hides client addresses.
+- **Prompt injection is mitigated, not solved.** A determined attacker may still influence free
+  text such as the reasoning or the notification draft; that is why a human reviews every
+  output.
+- **No dependency vulnerability scanning** is wired into CI.
+- **No external security review or penetration test** has been performed.
+- **CI has not been executed remotely yet** (the workflow file exists but the repository has
+  not been published).
+
+## Reporting a vulnerability
+
+Open a private security advisory on the repository (`<REPO_URL>`) or contact the author
+directly. Do not open a public issue with exploit details.

@@ -335,6 +335,12 @@ export interface components {
             file: string;
             /** Rescored */
             rescored: boolean;
+            /**
+             * Source
+             * @default artifacts
+             * @enum {string}
+             */
+            source: "artifacts" | "snapshot";
             /** Timestamp */
             timestamp: string | null;
             /** Metadata */

@@ -1,7 +1,8 @@
 import { delay, http, HttpResponse } from "msw";
 import type { ReportResponse } from "@/lib/api/client";
 import type { IncidentSummary } from "@/lib/api/queries";
-import evaluationFixture from "./evaluation.fixture.json";
+// The versioned summary of the reported run (scripts/export_eval_fixture.py).
+import evaluationSnapshot from "../../../docs/results/evaluation_latest.json";
 import { configFixture, healthFixture, metricsFixture } from "./fixtures";
 import { askAnswer, pickScenario, triageScenarios } from "./scenarios";
 
@@ -46,7 +47,7 @@ export const handlers = [
   http.get(`${API}/health`, () => HttpResponse.json(healthFixture)),
   http.get(`${API}/config`, () => HttpResponse.json(configFixture)),
   http.get(`${API}/metrics`, () => HttpResponse.json(metricsFixture)),
-  http.get(`${API}/evaluations/latest`, () => HttpResponse.json(evaluationFixture)),
+  http.get(`${API}/evaluations/latest`, () => HttpResponse.json({ ...evaluationSnapshot, source: "snapshot" })),
 
   http.get(`${API}/reports`, ({ request }) => {
     const q = new URL(request.url).searchParams;

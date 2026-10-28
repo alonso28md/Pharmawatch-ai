@@ -51,6 +51,30 @@ class EvaluationRunResult:
     flaky_cases: list[str] = field(default_factory=list)
 
 
+def summarize_case_outcomes(results: list[dict]) -> dict:
+    """Per-case outcome across repetitions: a case passes only if it passed every time."""
+    outcomes: dict[str, list[bool]] = defaultdict(list)
+    reasons: dict[str, list[str]] = defaultdict(list)
+    for r in results:
+        outcomes[r["case_id"]].append(r["passed"])
+        if not r["passed"] and r.get("failure_reason"):
+            reasons[r["case_id"]].append(r["failure_reason"])
+    return {
+        "passed": sum(1 for v in outcomes.values() if all(v)),
+        "failed": sum(1 for v in outcomes.values() if not all(v)),
+        "flaky_cases": sorted(cid for cid, v in outcomes.items() if any(v) and not all(v)),
+        "failed_cases": [
+            {
+                "case_id": cid,
+                "reason": f"failed {v.count(False)}/{len(v)} repetitions: "
+                + (reasons[cid][0] if reasons[cid] else "unknown"),
+            }
+            for cid, v in outcomes.items()
+            if not all(v)
+        ],
+    }
+
+
 def _git_commit() -> str | None:
     try:
         commit = subprocess.run(
@@ -255,22 +279,12 @@ class EvaluationHarness:
             per_rep_metrics.append(metrics)
         summary = aggregate_repetitions(per_rep_metrics)
 
-        outcomes: dict[str, list[bool]] = defaultdict(list)
-        reasons: dict[str, list[str]] = defaultdict(list)
-        for r in results:
-            outcomes[r["case_id"]].append(r["passed"])
-            if not r["passed"] and r.get("failure_reason"):
-                reasons[r["case_id"]].append(r["failure_reason"])
-        passed = sum(1 for v in outcomes.values() if all(v))
-        flaky = sorted(cid for cid, v in outcomes.items() if any(v) and not all(v))
-        failed_cases = [
-            {
-                "case_id": cid,
-                "reason": f"failed {v.count(False)}/{len(v)} repetitions: {reasons[cid][0]}",
-            }
-            for cid, v in outcomes.items()
-            if not all(v)
-        ]
+        outcome = summarize_case_outcomes(results)
+        passed, flaky, failed_cases = (
+            outcome["passed"],
+            outcome["flaky_cases"],
+            outcome["failed_cases"],
+        )
 
         metadata = {
             "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -305,9 +319,9 @@ class EvaluationHarness:
             r for r in results if by_category[r["case_id"]] == "classification"
         ]
         return EvaluationRunResult(
-            total_cases=len(outcomes),
+            total_cases=outcome["passed"] + outcome["failed"],
             passed=passed,
-            failed=len(outcomes) - passed,
+            failed=outcome["failed"],
             metrics={name: s["mean"] for name, s in summary.items()},
             failed_cases=failed_cases,
             rag_results=rag_results,

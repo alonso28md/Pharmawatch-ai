@@ -443,3 +443,43 @@ def test_rescore_reproduces_scores_from_a_saved_report():
     assert out["metrics"]["deadline_accuracy_decided"] == 0.0
     assert out["metrics"]["source_citation_rate"] == 1.0  # labels rebuilt as C1..Cn from sources
     assert out["metric_summary"]["deadline_accuracy"]["meets_threshold"] is False
+
+
+def test_rescore_rebuilds_failed_cases_from_the_new_scores():
+    """A case that passes after re-scoring must leave failed_cases (it used to stay listed)."""
+    from scripts.rescore_evaluation import rescore
+
+    good = {
+        **_rag_result("Within 15 days [C1].", {"facts": [["15 days"]]}),
+        "repetition": 0,
+        "latency_ms": 5.0,
+        "context": [{"label": "C1"}],
+    }
+    report = {
+        "timestamp": "t",
+        "summary": {"total_cases": 1, "passed": 0, "failed": 1},
+        "failed_cases": [{"case_id": good["case_id"], "reason": "stale"}],
+        "results": [good],
+    }
+    out = rescore(report)
+    assert out["summary"]["passed"] == 1
+    assert out["failed_cases"] == []
+    assert out["summary"]["pass_rate"] == 1.0
+
+
+def test_case_outcomes_count_errored_runs_as_failed():
+    from src.evaluation.harness import summarize_case_outcomes
+
+    rows = [
+        {"case_id": "a", "passed": True},
+        {"case_id": "a", "passed": False, "failure_reason": "answer incorrect"},
+        {"case_id": "b", "passed": False, "error": "LLMUnavailableError"},
+        {"case_id": "c", "passed": True},
+    ]
+    out = summarize_case_outcomes(rows)
+    assert (out["passed"], out["failed"], out["flaky_cases"]) == (1, 2, ["a"])
+    assert out["failed_cases"][0] == {
+        "case_id": "a",
+        "reason": "failed 1/2 repetitions: answer incorrect",
+    }
+    assert out["failed_cases"][1]["reason"] == "failed 1/1 repetitions: unknown"

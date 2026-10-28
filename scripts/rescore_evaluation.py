@@ -16,6 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.evaluation.harness import summarize_case_outcomes  # noqa: E402
 from src.evaluation.metrics import (  # noqa: E402
     aggregate_repetitions,
     classification_metrics,
@@ -57,18 +58,21 @@ def rescore(report: dict) -> dict:
     summary = aggregate_repetitions(per_rep)
     thresholds = load_thresholds()
 
-    outcomes: dict[str, list[bool]] = {}
-    for r in scored:
-        outcomes.setdefault(r["case_id"], []).append(r["passed"])
+    # Errored runs (model API failures) stay counted as failed, as in the harness.
+    outcome = summarize_case_outcomes(scored + [r for r in report["results"] if "error" in r])
     return {
         **report,
         "rescored_from": report.get("timestamp"),
         "summary": {
             **report["summary"],
-            "passed": sum(1 for v in outcomes.values() if all(v)),
-            "failed": sum(1 for v in outcomes.values() if not all(v)),
-            "flaky_cases": sorted(c for c, v in outcomes.items() if any(v) and not all(v)),
+            "passed": outcome["passed"],
+            "failed": outcome["failed"],
+            "pass_rate": round(outcome["passed"] / total, 4)
+            if (total := outcome["passed"] + outcome["failed"])
+            else 0.0,
+            "flaky_cases": outcome["flaky_cases"],
         },
+        "failed_cases": outcome["failed_cases"],
         "metrics": {name: s["mean"] for name, s in summary.items()},
         "metric_summary": {
             name: {

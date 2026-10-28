@@ -5,6 +5,8 @@ WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# Mock-mode code and tests import the versioned evaluation summary from ../docs/results.
+COPY docs/results/ /docs/results/
 RUN npm run build
 
 # --- build stage: compilers live only here ------------------------------------------
@@ -26,6 +28,7 @@ COPY src/ src/
 COPY data/ data/
 COPY scripts/ scripts/
 COPY config/ config/
+COPY docs/results/ docs/results/
 
 # Index the regulatory documents (downloads the embedding model into HF_HOME once).
 RUN python scripts/ingest_documents.py

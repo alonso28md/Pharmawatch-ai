@@ -233,6 +233,7 @@ export const en: Messages = {
     usageLine: "{calls} calls · {input} in / {output} out",
     casesLine: "RAG {rag} · classification {classification}",
     rescored: "Re-scored offline",
+    snapshot: "Summary versioned in the repository (docs/results): this server has no results of its own in ARTIFACTS_DIR.",
     passedAll: "Cases passed in every repetition",
     flaky: "Unstable cases",
     groups: { rag: "Retrieval and answers", classification: "Classification and deadlines", safety: "Escalation and safety", latency: "Latency" },

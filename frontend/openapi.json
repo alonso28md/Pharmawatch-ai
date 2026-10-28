@@ -846,6 +846,15 @@
             "type": "boolean",
             "title": "Rescored"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "artifacts",
+              "snapshot"
+            ],
+            "title": "Source",
+            "default": "artifacts"
+          },
           "timestamp": {
             "anyOf": [
               {

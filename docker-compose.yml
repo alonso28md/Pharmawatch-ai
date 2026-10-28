@@ -11,6 +11,10 @@ services:
       - CHROMA_PERSIST_DIR=${CHROMA_PERSIST_DIR:-data/chroma_db}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
       - API_KEY=${API_KEY:-}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - STORE_INPUT_TEXT=${STORE_INPUT_TEXT:-false}
+      - MAX_REQUEST_BYTES=${MAX_REQUEST_BYTES:-64000}
+      - REVIEWER_ENABLED=${REVIEWER_ENABLED:-false}
       - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-30}
     volumes:
       # Named volume (not a host bind-mount): Docker seeds it from the image's

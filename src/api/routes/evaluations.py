@@ -9,9 +9,13 @@ from fastapi import APIRouter, Query
 
 from src.api.errors import ApiError
 from src.api.schemas import EvaluationLatest
-from src.config import get_settings
+from src.config import PROJECT_ROOT, get_settings
 
 router = APIRouter()
+
+# Versioned summary of the reported run (scripts/export_eval_fixture.py), so a fresh clone
+# without ARTIFACTS_DIR results still shows the figures the README quotes.
+SNAPSHOT = PROJECT_ROOT / "docs" / "results" / "evaluation_latest.json"
 
 # eval_<label>_<YYYYmmddTHHMMSSZ>[_rescored].json, as written by the reporter / rescore script.
 _NAME = re.compile(
@@ -33,7 +37,7 @@ def _load(label: str | None) -> EvaluationLatest | None:
     directory = get_settings().artifacts_dir_absolute / "evaluations"
     path = _pick_latest(directory, label) if directory.is_dir() else None
     if path is None:
-        return None
+        return _load_snapshot(label)
     report = json.loads(path.read_text(encoding="utf-8"))
     return EvaluationLatest(
         file=path.name,
@@ -44,6 +48,16 @@ def _load(label: str | None) -> EvaluationLatest | None:
         metric_summary=report.get("metric_summary", {}),
         failed_cases=report.get("failed_cases", []),
     )
+
+
+def _load_snapshot(label: str | None) -> EvaluationLatest | None:
+    if not SNAPSHOT.is_file():
+        return None
+    snapshot = EvaluationLatest.model_validate_json(SNAPSHOT.read_text(encoding="utf-8"))
+    match = _NAME.match(snapshot.file)
+    if label is not None and (match is None or match["label"] != label):
+        return None
+    return snapshot.model_copy(update={"source": "snapshot"})
 
 
 @router.get("/evaluations/latest", response_model=EvaluationLatest, tags=["evaluation"])
