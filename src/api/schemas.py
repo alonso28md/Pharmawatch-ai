@@ -1,5 +1,6 @@
 """Pydantic v2 request/response models for the PharmaWatch AI REST API."""
 
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints
@@ -80,6 +81,42 @@ class ReportResponse(BaseModel):
     rag_sources: list[Source]
     draft_notification: dict | None = None
     processing_time_ms: int
+
+
+class IncidentSummary(ReportResponse):
+    """A stored incident result with its creation time."""
+
+    created_at: datetime
+
+
+class IncidentPage(BaseModel):
+    """GET /reports response: newest first."""
+
+    items: list[IncidentSummary]
+    total: int
+    limit: int
+    offset: int
+
+
+class MetricStat(BaseModel):
+    mean: float | None
+    min: float | None
+    max: float | None
+    n: int
+    threshold: dict | None = None
+    meets_threshold: bool | None = None
+
+
+class EvaluationLatest(BaseModel):
+    """GET /evaluations/latest: a stored evaluation result (read-only, never runs one)."""
+
+    file: str
+    rescored: bool
+    timestamp: str | None
+    metadata: dict
+    summary: dict
+    metric_summary: dict[str, MetricStat]
+    failed_cases: list[dict]
 
 
 class AskResponse(BaseModel):

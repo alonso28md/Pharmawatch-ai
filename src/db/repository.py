@@ -5,7 +5,7 @@ import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect, select, text
+from sqlalchemy import create_engine, func, inspect, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.db.models import Base, EvaluationRun, Incident, QueryLog
@@ -130,6 +130,40 @@ class Repository:
                 )
             )
             session.commit()
+
+    def list_incidents(
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        severity: str | None = None,
+        escalation: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> tuple[list[dict], int]:
+        """Newest-first page of stored incident results plus the total matching count.
+
+        `escalation`: "none", "advisory", "blocking" or "escalated" (advisory or blocking).
+        """
+        conditions = []
+        if severity:
+            conditions.append(Incident.severity == severity)
+        if escalation == "escalated":
+            conditions.append(Incident.escalation_level.in_(("advisory", "blocking")))
+        elif escalation:
+            conditions.append(Incident.escalation_level == escalation)
+        if since:
+            conditions.append(Incident.created_at >= since.astimezone(UTC).replace(tzinfo=None))
+        if until:
+            conditions.append(Incident.created_at < until.astimezone(UTC).replace(tzinfo=None))
+        with self._session_factory() as session:
+            total = session.scalar(select(func.count()).select_from(Incident).where(*conditions)) or 0
+            rows = session.scalars(
+                select(Incident).where(*conditions)
+                .order_by(Incident.created_at.desc(), Incident.incident_id.desc())
+                .limit(limit).offset(offset)
+            ).all()
+            items = [{**json.loads(r.result_json), "created_at": r.created_at.replace(tzinfo=UTC)} for r in rows]
+        return items, total
 
     def get_incident(self, incident_id: str) -> dict | None:
         with self._session_factory() as session:

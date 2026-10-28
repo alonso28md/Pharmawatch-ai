@@ -33,3 +33,40 @@ test("ask: citation opens the exact fragment", async ({ page }) => {
   await expect(page.getByRole("dialog")).toContainText("not later than 10 days");
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/ask-desktop.png` });
 });
+
+test("dashboard, review queue and incident detail", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("./");
+  await expect(page.getByRole("table", { name: "Últimos incidentes" })).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/dashboard-desktop.png`, fullPage: true });
+  await page.goto("review");
+  const queue = page.getByRole("table", { name: "Cola de revisión" });
+  await expect(queue).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/review-desktop.png`, fullPage: true });
+  await queue.getByRole("link").first().click();
+  await expect(page.getByRole("link", { name: "Volver a la cola" })).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/review-detail-desktop.png`, fullPage: true });
+});
+
+test("evaluation and operations", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("evaluation");
+  await expect(page.getByText("Etiquetas borrador (IA), pendientes de validación experta")).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "over_escalation_rate" })).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/evaluation-desktop.png`, fullPage: true });
+  await page.goto("operations");
+  await expect(page.getByRole("heading", { name: "Clases de dispositivo" })).toBeVisible();
+  await expect(page.locator(".recharts-bar-rectangle").first()).toBeVisible();
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/operations-desktop.png`, fullPage: true });
+});
+
+test("review queue and dashboard on a phone: no horizontal page scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("./");
+  await expect(page.getByRole("table", { name: "Últimos incidentes" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.goto("review");
+  await expect(page.getByRole("table", { name: "Cola de revisión" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/review-phone.png`, fullPage: true });
+});

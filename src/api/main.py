@@ -16,7 +16,7 @@ from src.api.middleware import (
     SecurityHeadersMiddleware,
     db_request_log_sink,
 )
-from src.api.routes import ask, config, evaluate, health, metrics, report, reports
+from src.api.routes import ask, config, evaluate, evaluations, health, metrics, report, reports
 from src.config import PROJECT_ROOT, get_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -61,6 +61,7 @@ app.include_router(ask.router)
 app.include_router(report.router)
 app.include_router(reports.router)
 app.include_router(evaluate.router)
+app.include_router(evaluations.router)
 app.include_router(metrics.router)
 app.include_router(config.router)
 

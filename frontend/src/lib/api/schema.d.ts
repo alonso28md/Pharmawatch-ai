@@ -94,6 +94,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Reports
+         * @description Stored incident results, newest first, with optional filters.
+         */
+        get: operations["list_reports_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/{incident_id}": {
         parameters: {
             query?: never;
@@ -132,6 +152,29 @@ export interface paths {
          *     Results are written as JSON to ARTIFACTS_DIR - never to docs/ or the query DB.
          */
         post: operations["evaluate_evaluate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evaluations/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Evaluation
+         * @description Metrics of the latest stored evaluation run, with thresholds and min/max over repetitions.
+         *
+         *     Read-only: it reads JSON files in ARTIFACTS_DIR/evaluations and never calls the model.
+         *     Per-case results are not included.
+         */
+        get: operations["latest_evaluation_evaluations_latest_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -284,6 +327,34 @@ export interface components {
             timestamp: string;
         };
         /**
+         * EvaluationLatest
+         * @description GET /evaluations/latest: a stored evaluation result (read-only, never runs one).
+         */
+        EvaluationLatest: {
+            /** File */
+            file: string;
+            /** Rescored */
+            rescored: boolean;
+            /** Timestamp */
+            timestamp: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Summary */
+            summary: {
+                [key: string]: unknown;
+            };
+            /** Metric Summary */
+            metric_summary: {
+                [key: string]: components["schemas"]["MetricStat"];
+            };
+            /** Failed Cases */
+            failed_cases: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
          * EvaluationSummary
          * @description Summary block of an /evaluate response.
          */
@@ -340,6 +411,89 @@ export interface components {
             model: string;
             /** Uptime Seconds */
             uptime_seconds: number;
+        };
+        /**
+         * IncidentPage
+         * @description GET /reports response: newest first.
+         */
+        IncidentPage: {
+            /** Items */
+            items: components["schemas"]["IncidentSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * IncidentSummary
+         * @description A stored incident result with its creation time.
+         */
+        IncidentSummary: {
+            /** Incident Id */
+            incident_id: string;
+            /** Severity */
+            severity: ("serious" | "non-serious") | null;
+            /** Severity Confidence */
+            severity_confidence: number | null;
+            /** Severity Reasoning */
+            severity_reasoning: string | null;
+            /** Incident Category */
+            incident_category: string | null;
+            /** Reportable */
+            reportable: boolean | null;
+            /** Report To */
+            report_to: string[] | null;
+            /** Deadline Days */
+            deadline_days: number | null;
+            /** Deadline Rule */
+            deadline_rule: string | null;
+            /** Device Class */
+            device_class: string | null;
+            /** Device Class Source */
+            device_class_source: ("caller" | "extracted" | "rule") | null;
+            /** Classification Rule */
+            classification_rule: string | null;
+            /** Escalated To Human */
+            escalated_to_human: boolean;
+            /**
+             * Escalation Level
+             * @enum {string}
+             */
+            escalation_level: "none" | "advisory" | "blocking";
+            /** Escalation Reason */
+            escalation_reason?: string | null;
+            /** Rag Sources */
+            rag_sources: components["schemas"]["Source"][];
+            /** Draft Notification */
+            draft_notification?: {
+                [key: string]: unknown;
+            } | null;
+            /** Processing Time Ms */
+            processing_time_ms: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MetricStat */
+        MetricStat: {
+            /** Mean */
+            mean: number | null;
+            /** Min */
+            min: number | null;
+            /** Max */
+            max: number | null;
+            /** N */
+            n: number;
+            /** Threshold */
+            threshold?: {
+                [key: string]: unknown;
+            } | null;
+            /** Meets Threshold */
+            meets_threshold?: boolean | null;
         };
         /**
          * OperationalMetricsResponse
@@ -604,6 +758,46 @@ export interface operations {
             };
         };
     };
+    list_reports_reports_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                severity?: ("serious" | "non-serious") | null;
+                escalation?: ("none" | "advisory" | "blocking" | "escalated") | null;
+                /** @description Inclusive, UTC calendar day */
+                date_from?: string | null;
+                /** @description Inclusive, UTC calendar day */
+                date_to?: string | null;
+            };
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_report_reports__incident_id__get: {
         parameters: {
             query?: never;
@@ -659,6 +853,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvaluateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_evaluation_evaluations_latest_get: {
+        parameters: {
+            query?: {
+                /** @description Dataset label, e.g. v2 */
+                dataset?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationLatest"];
                 };
             };
             /** @description Validation Error */

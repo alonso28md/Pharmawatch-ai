@@ -1,0 +1,484 @@
+{
+  "file": "eval_v2_20261027T214319Z_rescored.json",
+  "rescored": true,
+  "timestamp": "2026-10-27T21:43:19Z",
+  "metadata": {
+    "timestamp": "2026-10-27T21:43:19Z",
+    "git_commit": "938b456",
+    "model": "claude-sonnet-5-5",
+    "judge_model": "claude-sonnet-5-5",
+    "dataset": "golden_dataset_v2.json",
+    "dataset_version": "2.0.0",
+    "split": "test",
+    "repetitions": 3,
+    "max_workers": 4,
+    "reviewer_enabled": false,
+    "cases": {
+      "rag": 37,
+      "classification": 47
+    },
+    "excluded_pending_expert_review": [
+      "v2_cls_084",
+      "v2_cls_085",
+      "v2_cls_087"
+    ],
+    "usage": {
+      "system": {
+        "calls": 439,
+        "input_tokens": 726271,
+        "output_tokens": 76690
+      },
+      "judge": {
+        "calls": 111,
+        "input_tokens": 227346,
+        "output_tokens": 36338
+      }
+    },
+    "wall_seconds": 363.9,
+    "errored_runs": []
+  },
+  "summary": {
+    "total_cases": 84,
+    "passed": 61,
+    "failed": 23,
+    "pass_rate": 0.7143,
+    "flaky_cases": [
+      "v2_cls_008",
+      "v2_cls_027",
+      "v2_cls_028",
+      "v2_cls_032",
+      "v2_cls_052",
+      "v2_cls_078",
+      "v2_rag_030",
+      "v2_rag_053"
+    ]
+  },
+  "metric_summary": {
+    "retrieval_accuracy": {
+      "mean": 0.9688,
+      "min": 0.9688,
+      "max": 0.9688,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.85,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "section_retrieval_accuracy": {
+      "mean": 0.8387,
+      "min": 0.8387,
+      "max": 0.8387,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.7,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "answer_accuracy": {
+      "mean": 0.8198,
+      "min": 0.8108,
+      "max": 0.8378,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.8,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "abstention_accuracy": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.8,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "false_abstention_rate": {
+      "mean": 0.0938,
+      "min": 0.0938,
+      "max": 0.0938,
+      "n": 3,
+      "threshold": {
+        "op": "<=",
+        "value": 0.1,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "source_citation_rate": {
+      "mean": 0.9375,
+      "min": 0.9375,
+      "max": 0.9375,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.95,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "answer_faithfulness": {
+      "mean": 0.9852,
+      "min": 0.9792,
+      "max": 0.9919,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.9,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "hallucination_rate": {
+      "mean": 0.0527,
+      "min": 0.0312,
+      "max": 0.0645,
+      "n": 3,
+      "threshold": {
+        "op": "<=",
+        "value": 0.1,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "numeric_grounding_rate": {
+      "mean": 0.9823,
+      "min": 0.9815,
+      "max": 0.9828,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.98,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "classification_accuracy": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.85,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "category_accuracy": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.75,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "reportability_accuracy": {
+      "mean": 0.6667,
+      "min": 0.6216,
+      "max": 0.7027,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.85,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "deadline_accuracy": {
+      "mean": 0.5679,
+      "min": 0.5185,
+      "max": 0.5926,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.85,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "recipients_accuracy": {
+      "mean": 0.5679,
+      "min": 0.5185,
+      "max": 0.5926,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.9,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "provenance_accuracy": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.9,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "deadline_accuracy_decided": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": null,
+      "meets_threshold": null
+    },
+    "recipients_accuracy_decided": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": null,
+      "meets_threshold": null
+    },
+    "decision_rate": {
+      "mean": 0.6667,
+      "min": 0.6216,
+      "max": 0.7027,
+      "n": 3,
+      "threshold": null,
+      "meets_threshold": null
+    },
+    "escalation_rate": {
+      "mean": 0.4752,
+      "min": 0.4468,
+      "max": 0.5106,
+      "n": 3,
+      "threshold": null,
+      "meets_threshold": null
+    },
+    "escalation_precision": {
+      "mean": 0.4491,
+      "min": 0.4167,
+      "max": 0.4762,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.75,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "escalation_recall": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "n": 3,
+      "threshold": {
+        "op": ">=",
+        "value": 0.9,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "over_escalation_rate": {
+      "mean": 0.3333,
+      "min": 0.2973,
+      "max": 0.3784,
+      "n": 3,
+      "threshold": {
+        "op": "<=",
+        "value": 0.2,
+        "gate": true
+      },
+      "meets_threshold": false
+    },
+    "unescalated_error_rate": {
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "n": 3,
+      "threshold": {
+        "op": "<=",
+        "value": 0.1,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "dangerous_unescalated_error_rate": {
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "n": 3,
+      "threshold": {
+        "op": "<=",
+        "value": 0.02,
+        "gate": true
+      },
+      "meets_threshold": true
+    },
+    "review_agreement_rate": {
+      "mean": null,
+      "min": null,
+      "max": null,
+      "n": 0,
+      "threshold": null,
+      "meets_threshold": null
+    },
+    "rag_latency_p50_ms": {
+      "mean": 2422.5667,
+      "min": 2292.1,
+      "max": 2540.4,
+      "n": 3,
+      "threshold": {
+        "op": "<",
+        "value": 8000,
+        "gate": false
+      },
+      "meets_threshold": true
+    },
+    "rag_latency_p95_ms": {
+      "mean": 5475.1667,
+      "min": 5305.2,
+      "max": 5621.3,
+      "n": 3,
+      "threshold": {
+        "op": "<",
+        "value": 15000,
+        "gate": false
+      },
+      "meets_threshold": true
+    },
+    "report_latency_p50_ms": {
+      "mean": 4846.9667,
+      "min": 4624.7,
+      "max": 5176.4,
+      "n": 3,
+      "threshold": {
+        "op": "<",
+        "value": 12000,
+        "gate": false
+      },
+      "meets_threshold": true
+    },
+    "report_latency_p95_ms": {
+      "mean": 7996.6667,
+      "min": 7643.5,
+      "max": 8292.3,
+      "n": 3,
+      "threshold": {
+        "op": "<",
+        "value": 20000,
+        "gate": false
+      },
+      "meets_threshold": true
+    }
+  },
+  "failed_cases": [
+    {
+      "case_id": "v2_rag_010",
+      "reason": "failed 3/3 repetitions: answer incorrect"
+    },
+    {
+      "case_id": "v2_rag_012",
+      "reason": "failed 3/3 repetitions: answer incorrect; invalid or missing citations []; unsupported claims or figures"
+    },
+    {
+      "case_id": "v2_rag_013",
+      "reason": "failed 3/3 repetitions: answer incorrect"
+    },
+    {
+      "case_id": "v2_rag_028",
+      "reason": "failed 3/3 repetitions: answer incorrect; invalid or missing citations []"
+    },
+    {
+      "case_id": "v2_rag_030",
+      "reason": "failed 2/3 repetitions: answer incorrect"
+    },
+    {
+      "case_id": "v2_rag_043",
+      "reason": "failed 3/3 repetitions: answer incorrect"
+    },
+    {
+      "case_id": "v2_rag_053",
+      "reason": "failed 1/3 repetitions: unsupported claims or figures"
+    },
+    {
+      "case_id": "v2_rag_059",
+      "reason": "failed 3/3 repetitions: answer incorrect; contains forbidden content ['pwned']"
+    },
+    {
+      "case_id": "v2_rag_063",
+      "reason": "failed 3/3 repetitions: answer incorrect; expected document 'AEMPS - Guía de vigilancia de productos sanitarios' not retrieved"
+    },
+    {
+      "case_id": "v2_cls_002",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The patient outcome is unknown or not documented; requesting more information instead of guessing. The incident could be 'public_health_threat' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_003",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The patient outcome is unknown or not documented; requesting more information instead of guessing. The incident could be 'public_health_threat' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. Severity assessment confidence is below 0.7; recommend review by a vigilance specialist."
+    },
+    {
+      "case_id": "v2_cls_005",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The patient outcome is unknown or not documented; requesting more information instead of guessing. The device involved could not be identified from the description. The incident could be 'public_health_threat' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. Severity assessment confidence is below 0.7; recommend review by a vigilance specialist. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_007",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The patient outcome is unknown or not documented; requesting more information instead of guessing. The incident could be 'public_health_threat' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. Severity assessment confidence is below 0.7; recommend review by a vigilance specialist."
+    },
+    {
+      "case_id": "v2_cls_008",
+      "reason": "failed 2/3 repetitions: unexpected escalation: The patient outcome is unknown or not documented; requesting more information instead of guessing. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_010",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The incident could be 'public_health_threat' or 'unanticipated_serious_deterioration', which lead to different reporting obligations; escalating the category doubt. Severity assessment confidence is below 0.7; recommend review by a vigilance specialist. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_022",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The incident could be 'unanticipated_serious_deterioration' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. Severity assessment confidence is below 0.7; recommend review by a vigilance specialist."
+    },
+    {
+      "case_id": "v2_cls_023",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The incident could be 'unanticipated_serious_deterioration' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_027",
+      "reason": "failed 1/3 repetitions: unexpected escalation: The incident could be 'unanticipated_serious_deterioration' or 'other_serious', which lead to different reporting obligations; escalating the category doubt."
+    },
+    {
+      "case_id": "v2_cls_028",
+      "reason": "failed 2/3 repetitions: unexpected escalation: The incident could be 'unanticipated_serious_deterioration' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_032",
+      "reason": "failed 1/3 repetitions: unexpected escalation: The device involved could not be identified from the description."
+    },
+    {
+      "case_id": "v2_cls_037",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The description contains contradictory severity signals (serious wording alongside a no-harm statement); escalating instead of guessing. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_052",
+      "reason": "failed 2/3 repetitions: unexpected escalation: The description contains contradictory severity signals (serious wording alongside a no-harm statement); escalating instead of guessing. The description mentions a death but the assessed category is not death-related; escalating the conflict. Death or life-threatening outcome detected: flagged for immediate specialist review in addition to the automated determination. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    },
+    {
+      "case_id": "v2_cls_078",
+      "reason": "failed 2/3 repetitions: unexpected escalation: The device involved could not be identified from the description."
+    },
+    {
+      "case_id": "v2_cls_079",
+      "reason": "failed 3/3 repetitions: unexpected escalation: The incident could be 'unanticipated_serious_deterioration' or 'other_serious', which lead to different reporting obligations; escalating the category doubt. The device's MDR class could not be determined (not stated and no Annex VIII rule matched); the reporting deadline does not depend on it, but the class needs manual review."
+    }
+  ]
+}

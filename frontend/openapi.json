@@ -204,6 +204,159 @@
         }
       }
     },
+    "/reports": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "List Reports",
+        "description": "Stored incident results, newest first, with optional filters.",
+        "operationId": "list_reports_reports_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "serious",
+                    "non-serious"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "escalation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "advisory",
+                    "blocking",
+                    "escalated"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Escalation"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, UTC calendar day",
+              "title": "Date From"
+            },
+            "description": "Inclusive, UTC calendar day"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Inclusive, UTC calendar day",
+              "title": "Date To"
+            },
+            "description": "Inclusive, UTC calendar day"
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reports/{incident_id}": {
       "get": {
         "tags": [
@@ -307,6 +460,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EvaluateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluations/latest": {
+      "get": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Latest Evaluation",
+        "description": "Metrics of the latest stored evaluation run, with thresholds and min/max over repetitions.\n\nRead-only: it reads JSON files in ARTIFACTS_DIR/evaluations and never calls the model.\nPer-case results are not included.",
+        "operationId": "latest_evaluation_evaluations_latest_get",
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dataset label, e.g. v2",
+              "title": "Dataset"
+            },
+            "description": "Dataset label, e.g. v2"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationLatest"
                 }
               }
             }
@@ -630,6 +836,66 @@
         "title": "EvaluateResponse",
         "description": "POST /evaluate response body. `report_file` lives in ARTIFACTS_DIR/evaluations/."
       },
+      "EvaluationLatest": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "rescored": {
+            "type": "boolean",
+            "title": "Rescored"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          },
+          "metric_summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricStat"
+            },
+            "type": "object",
+            "title": "Metric Summary"
+          },
+          "failed_cases": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Failed Cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "rescored",
+          "timestamp",
+          "metadata",
+          "summary",
+          "metric_summary",
+          "failed_cases"
+        ],
+        "title": "EvaluationLatest",
+        "description": "GET /evaluations/latest: a stored evaluation result (read-only, never runs one)."
+      },
       "EvaluationSummary": {
         "properties": {
           "total_cases": {
@@ -759,6 +1025,325 @@
         ],
         "title": "HealthResponse",
         "description": "GET /health response body."
+      },
+      "IncidentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IncidentSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "IncidentPage",
+        "description": "GET /reports response: newest first."
+      },
+      "IncidentSummary": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "title": "Incident Id"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "serious",
+                  "non-serious"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "severity_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Confidence"
+          },
+          "severity_reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Reasoning"
+          },
+          "incident_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Category"
+          },
+          "reportable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reportable"
+          },
+          "report_to": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report To"
+          },
+          "deadline_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Days"
+          },
+          "deadline_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline Rule"
+          },
+          "device_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Class"
+          },
+          "device_class_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "caller",
+                  "extracted",
+                  "rule"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Class Source"
+          },
+          "classification_rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification Rule"
+          },
+          "escalated_to_human": {
+            "type": "boolean",
+            "title": "Escalated To Human"
+          },
+          "escalation_level": {
+            "type": "string",
+            "enum": [
+              "none",
+              "advisory",
+              "blocking"
+            ],
+            "title": "Escalation Level"
+          },
+          "escalation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalation Reason"
+          },
+          "rag_sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Rag Sources"
+          },
+          "draft_notification": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Notification"
+          },
+          "processing_time_ms": {
+            "type": "integer",
+            "title": "Processing Time Ms"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "incident_id",
+          "severity",
+          "severity_confidence",
+          "severity_reasoning",
+          "incident_category",
+          "reportable",
+          "report_to",
+          "deadline_days",
+          "deadline_rule",
+          "device_class",
+          "device_class_source",
+          "classification_rule",
+          "escalated_to_human",
+          "escalation_level",
+          "rag_sources",
+          "processing_time_ms",
+          "created_at"
+        ],
+        "title": "IncidentSummary",
+        "description": "A stored incident result with its creation time."
+      },
+      "MetricStat": {
+        "properties": {
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "meets_threshold": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meets Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "min",
+          "max",
+          "n"
+        ],
+        "title": "MetricStat"
       },
       "OperationalMetricsResponse": {
         "properties": {

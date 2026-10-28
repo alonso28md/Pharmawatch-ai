@@ -17,5 +17,8 @@ async def config() -> ConfigResponse:
         rate_limit_per_minute=settings.rate_limit_per_minute,
         retrieval_top_k=settings.retrieval_top_k,
         supported_languages=["en", "es"],
-        endpoints=["/health", "/ask", "/report", "/reports/{incident_id}", "/evaluate", "/metrics", "/config"],
+        endpoints=[
+            "/health", "/ask", "/report", "/report/stream", "/reports", "/reports/{incident_id}",
+            "/evaluate", "/evaluations/latest", "/metrics", "/config",
+        ],
     )
