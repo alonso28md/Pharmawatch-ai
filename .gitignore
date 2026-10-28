@@ -27,3 +27,7 @@ artifacts/
 Thumbs.db
 .vscode/
 .idea/
+
+# Logs and local tool settings
+*.log
+.claude/settings.local.json
