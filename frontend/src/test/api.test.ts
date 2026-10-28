@@ -50,3 +50,15 @@ describe("API client", () => {
     expect(error.status).toBe(0);
   });
 });
+
+describe("query retry policy", () => {
+  it("does not retry 4xx answers but retries network errors and 5xx", async () => {
+    const { shouldRetry } = await import("@/app/queryClient");
+    const { ApiError } = await import("@/lib/api/client");
+    expect(shouldRetry(0, new ApiError(401, "unauthorized", "x"))).toBe(false);
+    expect(shouldRetry(0, new ApiError(404, "not_found", "x"))).toBe(false);
+    expect(shouldRetry(0, new ApiError(0, "network_error", "x"))).toBe(true);
+    expect(shouldRetry(0, new ApiError(503, "llm_unavailable", "x"))).toBe(true);
+    expect(shouldRetry(2, new ApiError(503, "llm_unavailable", "x"))).toBe(false);
+  });
+});

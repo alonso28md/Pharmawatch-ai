@@ -10,6 +10,8 @@ from slowapi.middleware import SlowAPIMiddleware
 from src import __version__
 from src.api.deps import get_repository, limiter
 from src.api.errors import install_error_handlers
+from src.api.frontend import MOUNT as FRONTEND_MOUNT
+from src.api.frontend import frontend_router
 from src.api.middleware import (
     BodySizeLimitMiddleware,
     ObservabilityMiddleware,
@@ -69,12 +71,19 @@ static_dir = PROJECT_ROOT / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir), html=True), name="static")
 
+# Web interface: only when it has been built (cd frontend && npm run build).
+frontend_dist = PROJECT_ROOT / "frontend" / "dist"
+if (frontend_dist / "index.html").is_file():
+    app.include_router(frontend_router(frontend_dist))
+
 
 @app.get("/", include_in_schema=False)
 async def root():
-    """Redirect root to the static demo page if present, else to the API docs."""
+    """Redirect root to the web interface if built, else the legacy static page, else the docs."""
     from fastapi.responses import RedirectResponse
 
+    if (frontend_dist / "index.html").is_file():
+        return RedirectResponse(url=f"{FRONTEND_MOUNT}/")
     if static_dir.exists():
         return RedirectResponse(url="/static/index.html")
     return RedirectResponse(url="/docs")

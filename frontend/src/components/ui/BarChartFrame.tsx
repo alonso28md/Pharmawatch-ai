@@ -15,7 +15,8 @@ export function BarChartFrame({ data, title }: { data: BarDatum[]; title: string
   if (data.length === 0) return <p className="text-small text-ink-muted">{t.operations.noData}</p>;
   return (
     <figure>
-      <div className="h-48" aria-hidden="true">
+      {/* inert: Recharts renders focusable SVG; the table below is the accessible twin. */}
+      <div className="h-48" aria-hidden="true" inert>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
             <CartesianGrid vertical={false} stroke="var(--pw-border)" />

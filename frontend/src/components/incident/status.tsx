@@ -75,11 +75,13 @@ export function EscalationNotice({ level, reason }: { level: EscalationLevel; re
           {reasons.length > 0 && (
             <>
               <p className="mt-2 text-small font-semibold">{t.triage.reasons}</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-small text-ink">
+              <ul lang="en" className="mt-1 list-disc space-y-1 pl-5 text-small text-ink">
                 {reasons.map((r) => (
                   <li key={r}>{r}</li>
                 ))}
               </ul>
+              {/* escalation_reason is free English text from the backend (no stable code yet) */}
+              <p className="mt-1 text-caption text-ink-subtle">{t.triage.reasonsOriginal}</p>
             </>
           )}
         </div>

@@ -10,6 +10,8 @@ export default defineConfig(({ command, isPreview }) => ({
   plugins: [react(), tailwindcss()],
   base: command === "build" || isPreview ? "/app/" : "/",
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
+  // No data: URIs: the backend's CSP is `default-src 'self'`, which blocks inlined fonts/images.
+  build: { assetsInlineLimit: 0 },
   server: {
     port: 5173,
     strictPort: true,

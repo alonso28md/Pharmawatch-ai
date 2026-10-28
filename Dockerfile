@@ -1,3 +1,12 @@
+# --- web interface: static build served by FastAPI at /app ----------------------------
+FROM node:24-slim AS frontend
+
+WORKDIR /web
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
 # --- build stage: compilers live only here ------------------------------------------
 FROM python:3.14-slim AS builder
 
@@ -39,6 +48,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /opt/hf /opt/hf
 COPY --from=builder --chown=app:app /app /app
 COPY --chown=app:app static/ static/
+COPY --from=frontend --chown=app:app /web/dist frontend/dist
 
 USER app
 EXPOSE 8000

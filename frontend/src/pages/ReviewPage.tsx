@@ -1,4 +1,5 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Info, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useI18n } from "@/app/preferencesContext";
 import { ErrorNotice } from "@/components/ErrorNotice";
@@ -32,6 +33,8 @@ export function ReviewPage() {
   const dateFrom = params.get("from") ?? "";
   const dateTo = params.get("to") ?? "";
   const page = Math.max(1, Number(params.get("page") ?? 1) || 1);
+  // On phones and tablets the filters collapse so the queue is the first thing in view.
+  const [filtersOpen, setFiltersOpen] = useState(() => ["severity", "escalation", "from", "to"].some((k) => params.has(k)));
 
   const query = useReports({
     escalation,
@@ -59,8 +62,24 @@ export function ReviewPage() {
       <PageHeader title={t.pages.review.title} subtitle={t.pages.review.subtitle} />
       <ReadOnlyNote />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <Panel title={t.review.filtersTitle} className="h-fit">
-          <div className="space-y-4">
+        <Panel
+          title={t.review.filtersTitle}
+          className="h-fit"
+          actions={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              aria-expanded={filtersOpen}
+              aria-controls="review-filters"
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              <SlidersHorizontal aria-hidden="true" />
+              {filtersOpen ? t.review.hideFilters : t.review.showFilters}
+            </Button>
+          }
+        >
+          <div id="review-filters" className={filtersOpen ? "space-y-4" : "space-y-4 max-lg:hidden"}>
             <Field label={t.review.escalationLabel}>
               {({ id }) => (
                 <Select id={id} value={escalation} onChange={(e) => update({ escalation: e.target.value === "escalated" ? "" : e.target.value })}>

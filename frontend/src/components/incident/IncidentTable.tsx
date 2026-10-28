@@ -43,7 +43,7 @@ export function IncidentTable({ items, caption }: { items: IncidentSummary[]; ca
                 )}
               </td>
               <td className="tabular py-2.5 text-right whitespace-nowrap">
-                {item.deadline_days != null ? `${item.deadline_days} ${t.common.days}` : <span className="text-ink-subtle">{t.common.none}</span>}
+                {item.deadline_days != null ? `${item.deadline_days} ${t.common.days}` : <span className="text-ink-subtle">{t.common.none}</span>}
               </td>
             </tr>
           ))}

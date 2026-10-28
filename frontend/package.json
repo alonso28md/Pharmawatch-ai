@@ -10,12 +10,13 @@
     "build:mock": "tsc -b && vite build --mode mock --outDir dist-mock",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "lint": "oxlint src e2e",
+    "lint": "oxlint src e2e e2e-live",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "gen:api": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/lib/api/schema.d.ts",
-    "msw:init": "msw init public --save"
+    "msw:init": "msw init public --save",
+    "test:live": "playwright test -c playwright.live.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "5.3.0",

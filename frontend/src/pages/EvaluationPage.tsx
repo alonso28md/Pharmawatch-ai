@@ -7,6 +7,9 @@ import type { Messages } from "@/i18n/es";
 import { ApiError } from "@/lib/api/client";
 import { type EvaluationLatest, useLatestEvaluation } from "@/lib/api/queries";
 
+/** Typographic comparison operators for thresholds. */
+const OPS: Record<string, string> = { ">=": "≥", "<=": "≤" };
+
 type MetricKey = keyof Messages["evaluation"]["metrics"];
 type Stat = EvaluationLatest["metric_summary"][string];
 
@@ -34,7 +37,7 @@ function fill(template: string, values: Record<string, string>) {
 function useFormat() {
   const { number, percent } = useI18n();
   return (key: string, value: number | null | undefined) =>
-    value == null ? "—" : key.endsWith("_ms") ? `${number(value / 1000, { maximumFractionDigits: 1 })} s` : percent(value, 1);
+    value == null ? "—" : key.endsWith("_ms") ? `${number(value / 1000, { maximumFractionDigits: 1 })} s` : percent(value, 1);
 }
 
 /** Min–max range bar on a 0–1 scale with the mean marked and the threshold as a tick. */
@@ -104,12 +107,12 @@ function MetricTable({ title, keys, data }: { title: string; keys: MetricKey[]; 
                     <span className="flex items-center gap-3">
                       {!key.endsWith("_ms") && stat && <RangeBar stat={stat} />}
                       <span className="tabular text-small text-ink-muted whitespace-nowrap">
-                        {stat?.min != null ? `${format(key, stat.min)} – ${format(key, stat.max)}` : "—"}
+                        {stat?.min != null ? `${format(key, stat.min)}–${format(key, stat.max)}` : "—"}
                       </span>
                     </span>
                   </td>
                   <td className="tabular py-2.5 pr-4 text-small whitespace-nowrap text-ink-muted">
-                    {threshold ? `${threshold.op} ${format(key, threshold.value)}` : "—"}
+                    {threshold ? `${OPS[threshold.op] ?? threshold.op} ${format(key, threshold.value)}` : "—"}
                   </td>
                   <td className="py-2.5">
                     <Status stat={stat} />

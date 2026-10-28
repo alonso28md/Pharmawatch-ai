@@ -20,7 +20,7 @@ export function DashboardPage() {
   const recent = useReports({ limit: 5 });
   const health = useHealth();
   const m = metrics.data;
-  const ms = (v: number) => `${number(v / 1000, { maximumFractionDigits: 1 })} s`;
+  const ms = (v: number) => `${number(v / 1000, { maximumFractionDigits: 1 })} s`;
 
   return (
     <>
@@ -39,7 +39,7 @@ export function DashboardPage() {
                 label={t.dashboard.latencyP50}
                 loading={metrics.isPending}
                 value={m && m.latency_samples ? ms(m.p50_latency_ms) : t.common.none}
-                hint={m && m.latency_samples ? `p95 ${ms(m.p95_latency_ms)}` : undefined}
+                hint={m && m.latency_samples ? `p95 ${ms(m.p95_latency_ms)}` : undefined}
               />
               <Stat label={t.dashboard.escalationRate} loading={metrics.isPending} value={m ? percent(m.escalation_rate, 0) : null} />
               <Stat label={t.dashboard.errorRate} loading={metrics.isPending} value={m ? percent(m.error_rate, 1) : null} />
@@ -86,7 +86,7 @@ export function DashboardPage() {
                   <dt className="text-ink-muted">{t.health.model}</dt>
                   <dd className="font-mono text-small" translate="no">{health.data.model}</dd>
                   <dt className="text-ink-muted">{t.dashboard.uptime}</dt>
-                  <dd className="tabular">{number(health.data.uptime_seconds / 3600, { maximumFractionDigits: 1 })} h</dd>
+                  <dd className="tabular">{number(health.data.uptime_seconds / 3600, { maximumFractionDigits: 1 })}{" "}h</dd>
                 </dl>
               ) : health.isError ? (
                 <p className="text-body text-critical">{t.health.unreachable}</p>

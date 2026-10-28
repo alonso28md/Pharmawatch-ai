@@ -15,7 +15,7 @@ export function OperationsPage() {
   const toggleId = useId();
   const query = useMetrics(includeDemo);
   const m = query.data;
-  const ms = (v: number) => `${number(v / 1000, { maximumFractionDigits: 2 })} s`;
+  const ms = (v: number) => `${number(v / 1000, { maximumFractionDigits: 2 })} s`;
 
   const severityLabel: Record<string, string> = {
     serious: t.operations.serious,
@@ -58,8 +58,8 @@ export function OperationsPage() {
               {t.operations.latencyTitle}
             </h2>
             <StatGroup label={t.operations.latencyTitle}>
-              <Stat label="p50" loading={query.isPending} value={m?.latency_samples ? ms(m.p50_latency_ms) : t.common.none} />
-              <Stat label="p95" loading={query.isPending} value={m?.latency_samples ? ms(m.p95_latency_ms) : t.common.none} />
+              <Stat label={t.dashboard.latencyP50} loading={query.isPending} value={m?.latency_samples ? ms(m.p50_latency_ms) : t.common.none} />
+              <Stat label={t.dashboard.latencyP95} loading={query.isPending} value={m?.latency_samples ? ms(m.p95_latency_ms) : t.common.none} />
               <Stat label={t.operations.avg} loading={query.isPending} value={m?.latency_samples ? ms(m.avg_latency_ms) : t.common.none} />
               <Stat label={t.operations.samples} loading={query.isPending} value={m ? number(m.latency_samples) : null} />
             </StatGroup>

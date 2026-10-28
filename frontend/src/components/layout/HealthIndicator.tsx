@@ -41,10 +41,13 @@ export function HealthIndicator() {
       <button
         type="button"
         className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-small text-ink-muted hover:bg-surface-sunken"
-        aria-label={`${t.health.label}: ${t.health[status]}`}
       >
         <Icon className={cn("size-4 shrink-0", tone)} aria-hidden="true" />
-        <span>{t.health[status]}</span>
+        {/* Name = visible text plus a hidden prefix (WCAG 2.5.3 label in name). */}
+        <span>
+          <span className="sr-only">{t.health.label}: </span>
+          {t.health[status]}
+        </span>
         {data && (
           <span className="ml-auto font-mono text-caption text-ink-subtle" translate="no">
             v{data.version}
